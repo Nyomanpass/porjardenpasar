@@ -1,0 +1,76 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+body {
+  font-family: 'Poppins', sans-serif;
+}
+
+
+/* MODE KHUSUS SAAT EXPORT PDF */
+.export-pdf-mode * {
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+/* Paksa semua warna jadi aman untuk html2canvas */
+.export-pdf-mode {
+  --tw-bg-opacity: 1 !important;
+  background: #ffffff !important;
+}
+
+.export-pdf-mode * {
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+  color: #111827 !important;
+}
+
+/* Matikan oklch secara global saat proses export */
+.printing, .printing * {
+  color-interpolation-filters: sRGB !important;
+  --tw-bg-opacity: 1 !important;
+  --tw-text-opacity: 1 !important;
+  --tw-border-opacity: 1 !important;
+  /* Paksa semua variabel Tailwind v4 ke HEX standar */
+  --color-white: #ffffff !important;
+  --color-black: #000000 !important;
+}
+
+/* --- FIX LAYOUT BAGAN AGAR MENTOK & BISA DI-EXPORT --- */
+
+/* 1. Paksa kontainer agar selebar konten (Gak kebablasan ke kanan) */
+.react-brackets-container {
+    display: inline-flex !important; /* Kunci agar lebar pas */
+    width: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background-color: transparent !important;
+}
+
+/* 2. Jarak antar babak yang pas */
+.react-brackets-round {
+    margin-right: 50px !important; 
+    flex-shrink: 0 !important; /* Jangan biarkan babak gepeng */
+}
+
+/* 3. Matikan semua fitur Swipeable yang ngerusak PDF */
+[class*="SwipeableViews"], 
+[class*="SwipeableViews"] > div {
+    display: flex !important;
+    flex-direction: row !important;
+    transform: none !important;
+    width: auto !important;
+    overflow: visible !important;
+}
+
+/* 4. Fix Error OKLCH (Suntikkan di CSS Global) */
+:root {
+  /* Paksa fallback warna standar agar html2canvas gak error */
+  color-scheme: light;
+}
+
+
+@theme {
+  --color-primary: #EAB308;
+  --color-secondary: #6E332C;
+}
