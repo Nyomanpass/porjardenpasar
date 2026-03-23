@@ -59,9 +59,8 @@ const app = express();
 
 app.use(cors({
   origin: [
-    "https://peltidenpasar.org",
-    "https://www.peltidenpasar.org",
-    "http://localhost:5173"
+    "https://porjar.peltidenpasar.org",
+    "https://www.porjar.peltidenpasar.org",
   ]
 }));
 
@@ -156,7 +155,7 @@ const start = async () => {
     // await sequelize.sync({ force: true });
 
     await sequelize.sync({ alter: true });
-    app.listen(PORT, () => console.log("Server berjalan di port 5004"));
+    app.listen(PORT, () => console.log("Server berjalan di port 4000"));
   } catch (error) {
     console.error("❌ Error saat menjalankan server:", error);
   }
