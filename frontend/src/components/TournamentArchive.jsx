@@ -71,7 +71,7 @@ function TournamentArchive() {
                 Rekam Jejak & Jadwal
               </h2>
               <p className="text-sm sm:text-base text-gray-500 italic mt-2 max-w-2xl mx-auto">
-                Semua Turnamen PORJAR Denpasar
+                Daftar Turnamen Porjar Denpasar Cabang Tenis Lapangan
               </p>
               <div className="w-12 h-1 bg-yellow-600 mx-auto mt-4 rounded-full"></div>
             </div>

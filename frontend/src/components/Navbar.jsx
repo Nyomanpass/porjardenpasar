@@ -95,7 +95,7 @@ export default function Navbar() {
         <div className="flex items-center gap-3">
           <img src="/logo.png" alt="PELTI" className="w-10 md:w-14" />
           <div>
-            <h1 className="font-bold text-lg md:text-2xl">PORJAR DENPASAR</h1>
+            <h1 className="font-bold text-lg md:text-xl">PORJAR DENPASAR – TENIS LAPANGAN</h1>
             <p className="text-[10px] md:text-xs font-semibold">
               Persatuan Lawn Tenis Indonesia
             </p>
