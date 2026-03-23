@@ -70,9 +70,23 @@ Match.belongsTo(Bagan, { foreignKey: "baganId", as: "bagan" });
 Match.belongsTo(Tournament, { foreignKey: "tournamentId" });
 
 // Relasi ke Peserta (Sistem Single)
-Match.belongsTo(Peserta, { as: "peserta1", foreignKey: "peserta1Id" });
-Match.belongsTo(Peserta, { as: "peserta2", foreignKey: "peserta2Id" });
-Match.belongsTo(Peserta, { as: "winner", foreignKey: "winnerId" });
+Match.belongsTo(Peserta, { 
+  as: "peserta1", 
+  foreignKey: "peserta1Id",
+  onDelete: "RESTRICT"
+});
+
+Match.belongsTo(Peserta, { 
+  as: "peserta2", 
+  foreignKey: "peserta2Id",
+  onDelete: "RESTRICT"
+});
+
+Match.belongsTo(Peserta, { 
+  as: "winner", 
+  foreignKey: "winnerId",
+  onDelete: "RESTRICT"
+});
 
 // Relasi ke DoubleTeam (Sistem Ganda)
 Match.belongsTo(DoubleTeam, { as: "doubleTeam1", foreignKey: "doubleTeam1Id" });

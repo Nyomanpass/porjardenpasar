@@ -47,6 +47,10 @@ const BASE_URL = import.meta.env.VITE_API_URL;
         nomorWhatsapp: peserta.nomorWhatsapp,
         tanggalLahir: peserta.tanggalLahir,
         kelompokUmurId: peserta.kelompokUmurId,
+        nik: peserta.nik || "",
+        registrationType: peserta.registrationType || "",
+        asalSekolah: peserta.asalSekolah || "",
+        alamatSekolah: peserta.alamatSekolah || "",
       });
     }
   }, [peserta]);
@@ -87,34 +91,52 @@ const BASE_URL = import.meta.env.VITE_API_URL;
     } catch (err) { console.error(err); }
   };
 
+
+
   const handleUpdate = async () => {
-    try {
-      const form = new FormData();
-      form.append("namaLengkap", formData.namaLengkap);
-      form.append("nomorWhatsapp", formData.nomorWhatsapp);
-      form.append("tanggalLahir", formData.tanggalLahir);
-      form.append("kelompokUmurId", formData.kelompokUmurId);
+  try {
+    const form = new FormData();
 
-      if (newFotoKartu) {
-        form.append("fotoKartu", newFotoKartu);
-      }
+    form.append("namaLengkap", formData.namaLengkap);
+    form.append("nomorWhatsapp", formData.nomorWhatsapp);
+    form.append("tanggalLahir", formData.tanggalLahir);
+    form.append("kelompokUmurId", formData.kelompokUmurId);
 
-      if (newBuktiBayar) {
-        form.append("buktiBayar", newBuktiBayar);
-      }
+    // 🔥 TAMBAHAN (INI YANG WAJIB)
+    form.append("nik", formData.nik);
+    form.append("registrationType", formData.registrationType);
+    form.append("alamatSekolah", formData.alamatSekolah);
 
-      await api.put(`/peserta/${id}`, form, {
-        headers: { "Content-Type": "multipart/form-data" }
-      });
+    // OPTIONAL
+    form.append("asalSekolah", formData.asalSekolah || "");
 
-      setSuccess("Data peserta berhasil diperbarui ✅");
-      setIsEditing(false);
-      fetchPesertaDetail();
-    } catch (err) {
-      console.error(err);
+    // FILE (TETAP)
+    if (newFotoKartu) {
+      form.append("fotoKartu", newFotoKartu);
+    }
+
+    if (newBuktiBayar) {
+      form.append("buktiBayar", newBuktiBayar);
+    }
+
+    await api.put(`/peserta/${id}`, form, {
+      headers: { "Content-Type": "multipart/form-data" }
+    });
+
+    setSuccess("Data peserta berhasil diperbarui ✅");
+    setIsEditing(false);
+    fetchPesertaDetail();
+
+  } catch (err) {
+   console.error(err);
+
+    if (err.response?.data?.message) {
+      setErrorAlert(err.response.data.message); // 🔥 ambil dari backend
+    } else {
       setError("Gagal update peserta");
     }
-  };
+  }
+};
 
 
 
@@ -248,16 +270,23 @@ const BASE_URL = import.meta.env.VITE_API_URL;
           </div>
         </div>
 
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-1 gap-8">
             {/* KOLOM KIRI: DATA PRIBADI & AKSI */}
             <div className="space-y-6">
               <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2"><User size={20} className="text-blue-500" /> Data Pribadi</h2>
               <div className="grid gap-3">
-               
-
-                <InfoRow label="Whatsapp" value={peserta.nomorWhatsapp} icon={<Phone size={16}/>} />
+                <InfoRow label="NIK" value={peserta.nik || "-"} icon={<FileText size={16}/>}/>
                 <InfoRow label="Tgl Lahir" value={new Date(peserta.tanggalLahir).toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' })} icon={<Calendar size={16}/>} />
                 <InfoRow label="Kelompok Umur" value={peserta.kelompokUmur?.nama || "Umum"} icon={<Users size={16}/>} />
+               
+                <InfoRow 
+                  label="Jenis Pendaftaran" 
+                  value={peserta.registrationType === "double" ? "Double" : "Single"} 
+                  icon={<Users size={16}/>}
+                />
+                <InfoRow label="Asal Sekolah" value={peserta.asalSekolah || "-"} icon={<User size={16}/>}/>
+                <InfoRow label="Alamat Sekolah" value={peserta.alamatSekolah || "-"} icon={<FileText size={16}/>}/>
+                <InfoRow label="Whatsapp" value={peserta.nomorWhatsapp} icon={<Phone size={16}/>} />
               </div>
 
               {/* TOMBOL AKSI VERIFIKASI / TOLAK */}
@@ -306,7 +335,8 @@ const BASE_URL = import.meta.env.VITE_API_URL;
           
         </div>
       </div>
-              {isEditing && (
+
+{isEditing && (
   <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
     <div className="bg-white shadow-2xl rounded-2xl p-8 border border-gray-100 w-full max-w-3xl relative animate-in fade-in zoom-in">
 
@@ -343,6 +373,67 @@ const BASE_URL = import.meta.env.VITE_API_URL;
             className="border border-gray-300 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500/70 focus:border-blue-500 outline-none shadow-sm"
           />
         </div>
+
+        {/* FIELD BARU */}
+<div className="grid md:grid-cols-2 gap-6">
+
+  {/* NIK */}
+  <div className="flex flex-col">
+    <label className="text-sm font-semibold text-gray-700 mb-1">
+      NIK
+    </label>
+    <input
+      value={formData.nik || ""}
+      onChange={(e)=>setFormData({...formData, nik:e.target.value})}
+      placeholder="Masukkan NIK"
+      className="border border-gray-300 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500/70 outline-none shadow-sm"
+    />
+  </div>
+
+  {/* JENIS PENDAFTARAN */}
+  <div className="flex flex-col">
+    <label className="text-sm font-semibold text-gray-700 mb-1">
+      Jenis Pendaftaran
+    </label>
+    <select
+      value={formData.registrationType || ""}
+      onChange={(e)=>setFormData({...formData, registrationType:e.target.value})}
+      className="border border-gray-300 px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500/70 outline-none shadow-sm"
+    >
+      <option value="">-- Pilih --</option>
+      <option value="single">Single</option>
+      <option value="double">Double</option>
+    </select>
+  </div>
+
+</div>
+
+{/* SEKOLAH */}
+<div className="grid md:grid-cols-2 gap-6 ">
+
+  <div className="flex flex-col">
+    <label className="text-sm font-semibold text-gray-700 mb-1">
+      Asal Sekolah
+    </label>
+    <input
+      value={formData.asalSekolah || ""}
+      onChange={(e)=>setFormData({...formData, asalSekolah:e.target.value})}
+      className="border border-gray-300 px-4 py-3 rounded-xl shadow-sm"
+    />
+  </div>
+
+  <div className="flex flex-col">
+    <label className="text-sm font-semibold text-gray-700 mb-1">
+      Alamat Sekolah
+    </label>
+    <input
+      value={formData.alamatSekolah || ""}
+      onChange={(e)=>setFormData({...formData, alamatSekolah:e.target.value})}
+      className="border border-gray-300 px-4 py-3 rounded-xl shadow-sm"
+    />
+  </div>
+
+</div>
 
         <div className="flex flex-col">
           <label className="text-sm font-semibold text-gray-700 mb-1">Tanggal Lahir</label>
@@ -470,12 +561,21 @@ const BASE_URL = import.meta.env.VITE_API_URL;
 // Komponen Pembantu (InfoRow & DocButton) sama dengan sebelumnya...
 function InfoRow({ label, value, icon }) {
   return (
-    <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100 shadow-sm">
-      <div className="p-2 bg-white rounded-lg text-blue-600">{icon}</div>
-      <div>
-        <p className="text-[10px] uppercase font-bold text-gray-400">{label}</p>
-        <p className="text-gray-800 font-bold">{value}</p>
+    <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-gray-50 to-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition">
+      
+      <div className="p-2 bg-blue-50 rounded-xl text-blue-600">
+        {icon}
       </div>
+
+      <div className="flex flex-col">
+        <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wide">
+          {label}
+        </span>
+        <span className="text-gray-800 font-semibold text-sm break-all">
+          {value}
+        </span>
+      </div>
+
     </div>
   );
 }

@@ -51,6 +51,9 @@ const JadwalPage = () => {
   const [manualWinnerMatch, setManualWinnerMatch] = useState(null);
 
   const [ruleMode, setRuleMode] = useState(null); 
+  const [tiebreakSummary, setTiebreakSummary] = useState({});
+
+  
 
 
 
@@ -96,6 +99,14 @@ useEffect(() => {
     fetchBagan();
     fetchLapangan();
   }, []);
+
+
+  useEffect(() => {
+  if (jadwal.length > 0) {
+    const allMatches = jadwal.map(j => j.match);
+    fetchTiebreak(allMatches);
+  }
+}, [jadwal]);
 
 
 
@@ -374,6 +385,124 @@ const groupedJadwal = [...jadwal]
       />
     );
   }
+
+  const getTiebreakFromLogs = (allLogs, setNum, finalS1, finalS2, gameLimit = 6) => {
+  const setLogs = allLogs
+    .filter(log => log.setKe === setNum)
+    .sort((a, b) => a.id - b.id);
+
+  if (setLogs.length === 0) return null;
+
+  // 🔥 SET 3 (SUPER TB)
+  if (setNum === 3) {
+    const lastLog = setLogs[setLogs.length - 1];
+    return {
+      p1: parseInt(lastLog.skorP1) || 0,
+      p2: parseInt(lastLog.skorP2) || 0,
+    };
+  }
+
+  // 🔥 UBAH LOGIC DI SINI (PENTING)
+  const isRealTiebreak =
+  Math.abs(finalS1 - finalS2) === 1 &&
+  (finalS1 >= gameLimit || finalS2 >= gameLimit);
+
+  if (!isRealTiebreak) return null;
+
+  let tbEndIndex = -1;
+  for (let i = 0; i < setLogs.length - 1; i++) {
+    if (
+      setLogs[i].gameP1 !== setLogs[i + 1].gameP1 ||
+      setLogs[i].gameP2 !== setLogs[i + 1].gameP2
+    ) {
+      tbEndIndex = i;
+    }
+  }
+
+  if (tbEndIndex === -1) return null;
+
+  const lastTbLog = setLogs[tbEndIndex];
+
+  let p1 = parseInt(lastTbLog.skorP1) || 0;
+  let p2 = parseInt(lastTbLog.skorP2) || 0;
+
+  if (finalS1 > finalS2) p1 += 1;
+  else p2 += 1;
+
+  return { p1, p2 };
+};
+
+  const fetchTiebreak = async (matches) => {
+    const newTb = {};
+
+    for (const match of matches) {
+      try {
+        const res = await api.get(`/match-logs/${match.id}`);
+        const logs = res.data;
+
+        if (!logs?.length) continue;
+
+        const sortedLogs = [...logs].sort((a, b) => a.id - b.id);
+        const tbData = {};
+
+        [1, 2, 3].forEach((sNum) => {
+          const s1 = parseInt(match[`set${sNum}P1`]);
+          const s2 = parseInt(match[`set${sNum}P2`]);
+
+          const result = getTiebreakFromLogs(
+            sortedLogs,
+            sNum,
+            s1,
+            s2,
+            match.scoreRule?.gamePerSet || 6
+          );
+
+          if (result) {
+            tbData[`set${sNum}`] = result;
+          }
+        });
+
+        if (Object.keys(tbData).length > 0) {
+          newTb[match.id] = tbData;
+        }
+
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    setTiebreakSummary(newTb);
+  };
+
+const formatSetScore = (m) => {
+  const sets = [];
+
+  for (let i = 1; i <= 3; i++) {
+    const s1 = parseInt(m[`set${i}P1`]);
+    const s2 = parseInt(m[`set${i}P2`]);
+    const tbPoint = tiebreakSummary[m.id]?.[`set${i}`];
+
+    if (isNaN(s1) || isNaN(s2)) continue;
+
+    if (s1 === 0 && s2 === 0 && !tbPoint) continue;
+
+    // ✅ SUPER TB
+    if (i === 3 && tbPoint) {
+      sets.push(`${tbPoint.p1}-${tbPoint.p2}`);
+      continue;
+    }
+
+    // ✅ NORMAL TB
+    if (tbPoint) {
+      sets.push(`${s1}-${s2}(${tbPoint.p1}-${tbPoint.p2})`);
+    } else {
+      sets.push(`${s1}-${s2}`);
+    }
+  }
+
+  return sets.join(" ");
+};
+
 
   return (
     <div className="min-h-screen">
@@ -801,6 +930,8 @@ const groupedJadwal = [...jadwal]
                             <div className="text-[8px] md:text-[10px] font-black text-blue-600 uppercase tracking-wider mb-2 md:mb-3 truncate pr-8">
                               {match.match?.bagan?.nama || 'Tournament'}
                             </div>
+
+                            
                             
                             {/* Nama Tim/Pemain dengan text wrap yang lebih baik */}
                             <div className="space-y-1.5 md:space-y-2 mb-3 md:mb-4">
@@ -827,8 +958,25 @@ const groupedJadwal = [...jadwal]
                                     {match.status}
                                   </span>
                                    
-
+                                      {match.status === "selesai" && (
+                                        <div className="mb-2">
+                                          <div className="flex">
+                                            {formatSetScore(match.match)
+                                              ?.split(" ")
+                                              .map((set, index) => (
+                                                <div
+                                                  key={index}
+                                                  className="px-1 py-1 rounded-lg bg-slate-100 text-slate-800 text-xs font-black tracking-wide shadow-sm border border-slate-200"
+                                                >
+                                                  {set}
+                                                </div>
+                                              ))}
+                                          </div>
+                                        </div>
+                                      )}
                                </div>
+
+                         
 
                                 {/* Tombol Aksi Wasit/Admin */}
                                 {["admin", "panitia", "wasit"].includes(role) && (

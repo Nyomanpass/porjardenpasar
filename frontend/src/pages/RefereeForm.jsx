@@ -44,6 +44,8 @@ const RefereeForm = ({ match, onFinish, onBack }) => {
   const [confirmPause, setConfirmPause] = useState(false);
   const [, forceRender] = useState(0);
 
+  const [isSwapped, setIsSwapped] = useState(false);
+
 
 useEffect(() => {
   let interval;
@@ -56,6 +58,10 @@ useEffect(() => {
 
   return () => clearInterval(interval);
 }, [isTimerRunning]);
+
+const handleSwitchSide = () => {
+  setIsSwapped(prev => !prev);
+};
 
   const formatTime = (seconds) => {
     const hrs = Math.floor(seconds / 3600);
@@ -500,6 +506,56 @@ if (isGameEnd) {
 
   if (isLoading) return <div className="fixed inset-0 bg-slate-950 flex items-center justify-center text-white">Loading...</div>;
 
+  const leftPlayer = isSwapped ? 2 : 1;
+  const rightPlayer = isSwapped ? 1 : 2;
+
+
+
+  const playerInfo = {
+    1: {
+      isDouble: !!match.doubleTeam1?.namaTim,
+      names: match.doubleTeam1?.namaTim
+        ? match.doubleTeam1.namaTim.split(" / ")
+        : [match.peserta1?.namaLengkap],
+    },
+    2: {
+      isDouble: !!match.doubleTeam2?.namaTim,
+      names: match.doubleTeam2?.namaTim
+        ? match.doubleTeam2.namaTim.split(" / ")
+        : [match.peserta2?.namaLengkap],
+    },
+  };
+
+  const leftInfo = playerInfo[leftPlayer];
+  const rightInfo = playerInfo[rightPlayer];
+
+  const playerScore = {
+    1: {
+      point: p1Point,
+      game: p1Game,
+      color: "blue",
+    },
+    2: {
+      point: p2Point,
+      game: p2Game,
+      color: "red",
+    },
+  };
+
+  const leftScore = playerScore[leftPlayer];
+  const rightScore = playerScore[rightPlayer];
+
+
+  const playerMeta = {
+    1: { label: "P1", color: "blue" },
+    2: { label: "P2", color: "red" },
+  };
+
+  const leftMeta = playerMeta[leftPlayer];
+  const rightMeta = playerMeta[rightPlayer];
+
+
+
   return (
  <div
   className={`fixed inset-0 z-[1000] font-sans flex items-center justify-center p-4 overflow-hidden transition-colors duration-300 ${
@@ -529,9 +585,16 @@ if (isGameEnd) {
   {/* Header Indikator Status - Dibuat lebih melayang */}
 <div className="min-h-screen w-[100%] md:w-[75%] flex items-center justify-center">
      <div className="w-full relative">
+            <button
+            onClick={handleSwitchSide}
+            className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase"
+          >
+            Switch Side
+          </button>
       {/* MENU ⋮ - Dibuat lebih modern */}
       <div className="absolute top-0 right-4 z-[60]">
         <div className="flex flex-col items-end">
+          
           
           {/* Tombol Titik Tiga */}
           <button
@@ -549,6 +612,7 @@ if (isGameEnd) {
             <span className={`text-xl font-black ${isDarkMode ? "text-white" : "text-black"}`}>
               {showMenu ? "✕" : "⋮"}
             </span>
+            
           </button>
 
           {showMenu && (
@@ -764,6 +828,8 @@ if (isGameEnd) {
   )}
 </div>
 
+
+
       {/* MAIN SCOREBOARD - The Heroes Section */}
   <div className={`rounded-[2.5rem] p-1 border mb-8 relative overflow-hidden transition-colors duration-300 ${
     isDarkMode
@@ -844,174 +910,181 @@ if (isGameEnd) {
         {/* PLAYER 1 */}
         <div className="flex flex-col items-center">
           {/* Serve Indicator - Menjadi penanda utama wasit */}
-          {isServeEnabled && (
-         <div className="h-6 mb-3 flex items-center justify-center">
-            {server === 1 ? (
-              <div
-                className={`flex gap-1.5 px-3 py-1 rounded-full border transition-colors ${
-                  isDarkMode
-                    ? "bg-yellow-400/20 border-yellow-400/40 shadow-[0_0_15px_rgba(250,204,21,0.2)]"
-                    : "bg-yellow-100 border-yellow-300 shadow-sm"
-                }`}
-              >
-                {Array.from({ length: serveCount }).map((_, i) => (
-                  <div
-                    key={i}
-                    className={`w-2.5 h-2.5 rounded-full animate-pulse transition-colors ${
-                      isDarkMode
-                        ? "bg-yellow-400 shadow-[0_0_10px_#facc15]"
-                        : "bg-yellow-500"
-                    }`}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="h-6" />
+            {isServeEnabled && (
+          <div className="h-6 mb-3 flex items-center justify-center">
+              {server === 1 ? (
+                <div
+                  className={`flex gap-1.5 px-3 py-1 rounded-full border transition-colors ${
+                    isDarkMode
+                      ? "bg-yellow-400/20 border-yellow-400/40 shadow-[0_0_15px_rgba(250,204,21,0.2)]"
+                      : "bg-yellow-100 border-yellow-300 shadow-sm"
+                  }`}
+                >
+                  {Array.from({ length: serveCount }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={`w-2.5 h-2.5 rounded-full animate-pulse transition-colors ${
+                        isDarkMode
+                          ? "bg-yellow-400 shadow-[0_0_10px_#facc15]"
+                          : "bg-yellow-500"
+                      }`}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="h-6" />
+              )}
+            </div>
             )}
-          </div>
-          )}
 
-          {/* NAMA PEMAIN */}
-        <div className="min-h-[80px] flex flex-col items-center justify-center mb-3">
-          {match.doubleTeam1?.namaTim ? (
-            <>
-              {match.doubleTeam1.namaTim.split(" / ").map((name, i, arr) => (
+            {/* NAMA PEMAIN */}
+            <div className="min-h-[80px] flex flex-col items-center justify-center mb-3">
+              {leftInfo.names.map((name, i) => (
                 <div
                   key={i}
-                  className={`text-sm md:text-base font-bold text-center leading-snug transition-colors ${
+                  className={`text-sm md:text-base font-bold text-center leading-snug ${
                     isDarkMode ? "text-white" : "text-black"
                   }`}
                 >
                   {formatName(name)}
-                  {i === 0 && (
-                    <div
-                      className={`font-black my-1 transition-colors ${
-                        isDarkMode ? "text-yellow-400" : "text-yellow-600"
-                      }`}
-                    >
+
+                  {leftInfo.isDouble && i === 0 && (
+                    <div className={`font-black my-1 ${
+                      isDarkMode ? "text-yellow-400" : "text-yellow-600"
+                    }`}>
                       &
                     </div>
                   )}
                 </div>
               ))}
-            </>
-          ) : (
-            <h2
-              className={`text-sm md:text-base font-bold text-center leading-snug transition-colors ${
-                isDarkMode ? "text-white" : "text-black"
+            </div>
+
+            {/* POIN UTAMA */}
+            <div
+              className={`text-5xl font-black tabular-nums tracking-tighter transition-colors duration-300 ${
+                isDarkMode
+                  ? "text-white drop-shadow-2xl"
+                  : "text-black"
               }`}
             >
-              {formatName(match.peserta1?.namaLengkap)}
-            </h2>
-          )}
-        </div>
-
-          {/* POIN UTAMA */}
-         <div
-          className={`text-5xl font-black tabular-nums tracking-tighter transition-colors duration-300 ${
-            isDarkMode
-              ? "text-white drop-shadow-2xl"
-              : "text-black"
-          }`}
-        >
-          {p1Point}
-        </div>
-
-          {/* GAMES SCORE */}
-          <div className="mt-6 flex flex-col items-center">
-            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">Games</span>
-            <div className="px-4 py-1 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-              <span className="text-2xl font-black text-blue-500 italic">{p1Game}</span>
+              {leftScore.point}
             </div>
-          </div>
+
+            {/* GAMES SCORE */}
+            <div className="mt-6 flex flex-col items-center">
+              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">
+                Games
+              </span>
+
+              <div
+                className={`px-4 py-1 rounded-lg border ${
+                  leftScore.color === "blue"
+                    ? "bg-blue-500/10 border-blue-500/20"
+                    : "bg-red-500/10 border-red-500/20"
+                }`}
+              >
+                <span
+                  className={`text-2xl font-black italic ${
+                    leftScore.color === "blue"
+                      ? "text-blue-500"
+                      : "text-red-500"
+                  }`}
+                >
+                  {leftScore.game}
+                </span>
+              </div>
+            </div>
         </div>
 
         {/* PLAYER 2 */}
-         <div className="flex flex-col items-center">
+        <div className="flex flex-col items-center">
           {/* Serve Indicator */}
           {isServeEnabled && (
-        <div className="h-6 mb-3 flex items-center justify-center">
-          {server === 2 ? (
-            <div
-              className={`flex gap-1.5 px-3 py-1 rounded-full border transition-colors ${
-                isDarkMode
-                  ? "bg-yellow-400/20 border-yellow-400/40 shadow-[0_0_15px_rgba(250,204,21,0.2)]"
-                  : "bg-yellow-100 border-yellow-300 shadow-sm"
-              }`}
-            >
-              {Array.from({ length: serveCount }).map((_, i) => (
+            <div className="h-6 mb-3 flex items-center justify-center">
+              {server === 2 ? (
                 <div
-                  key={i}
-                  className={`w-2.5 h-2.5 rounded-full animate-pulse transition-colors ${
+                  className={`flex gap-1.5 px-3 py-1 rounded-full border transition-colors ${
                     isDarkMode
-                      ? "bg-yellow-400 shadow-[0_0_10px_#facc15]"
-                      : "bg-yellow-500"
+                      ? "bg-yellow-400/20 border-yellow-400/40 shadow-[0_0_15px_rgba(250,204,21,0.2)]"
+                      : "bg-yellow-100 border-yellow-300 shadow-sm"
                   }`}
-                />
-              ))}
+                >
+                  {Array.from({ length: serveCount }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={`w-2.5 h-2.5 rounded-full animate-pulse transition-colors ${
+                        isDarkMode
+                          ? "bg-yellow-400 shadow-[0_0_10px_#facc15]"
+                          : "bg-yellow-500"
+                      }`}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="h-6" />
+              )}
             </div>
-          ) : (
-            <div className="h-6" />
-          )}
-        </div>
-          )}
+              )}
 
-          {/* NAMA PEMAIN */}
-        <div className="min-h-[80px] flex flex-col items-center justify-center mb-3">
-          {match.doubleTeam2?.namaTim ? (
-            <>
-              {match.doubleTeam2.namaTim.split(" / ").map((name, i, arr) => (
+              {/* NAMA PEMAIN */}
+              <div className="min-h-[80px] flex flex-col items-center justify-center mb-3">
+              {rightInfo.names.map((name, i) => (
                 <div
                   key={i}
-                  className={`text-sm md:text-base font-bold text-center leading-snug transition-colors ${
+                  className={`text-sm md:text-base font-bold text-center leading-snug ${
                     isDarkMode ? "text-white" : "text-black"
                   }`}
                 >
                   {formatName(name)}
-                  {i === 0 && (
-                    <div
-                      className={`font-black my-1 transition-colors ${
-                        isDarkMode ? "text-yellow-400" : "text-yellow-600"
-                      }`}
-                    >
+
+                  {rightInfo.isDouble && i === 0 && (
+                    <div className={`font-black my-1 ${
+                      isDarkMode ? "text-yellow-400" : "text-yellow-600"
+                    }`}>
                       &
                     </div>
                   )}
                 </div>
               ))}
-            </>
-          ) : (
-            <h2
-              className={`text-sm md:text-base font-bold text-center leading-snug transition-colors ${
-                isDarkMode ? "text-white" : "text-black"
-              }`}
-            >
-              {formatName(match.peserta2?.namaLengkap)}
-            </h2>
-          )}
-        </div>
-          {/* POIN UTAMA */}
-
-          <div
-            className={`text-5xl font-black tabular-nums tracking-tighter transition-colors duration-300 ${
-              isDarkMode
-                ? "text-white drop-shadow-2xl"
-                : "text-black"
-            }`}
-          >
-          {p2Point}
-          </div>
-
-          {/* GAMES SCORE */}
-          <div className="mt-6 flex flex-col items-center">
-            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">Games</span>
-            <div className="px-4 py-1 bg-red-500/10 border border-red-500/20 rounded-lg">
-              <span className="text-2xl font-black text-red-500 italic">{p2Game}</span>
             </div>
-          </div>
-        </div>
+              {/* POIN UTAMA */}
+              <div
+                className={`text-5xl font-black tabular-nums tracking-tighter transition-colors duration-300 ${
+                  isDarkMode
+                    ? "text-white drop-shadow-2xl"
+                    : "text-black"
+                }`}
+              >
+                {rightScore.point}
+              </div>
 
-      </div>
+              {/* GAMES SCORE */}
+              <div className="mt-6 flex flex-col items-center">
+                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">
+                  Games
+                </span>
+
+                <div
+                  className={`px-4 py-1 rounded-lg border ${
+                    rightScore.color === "blue"
+                      ? "bg-blue-500/10 border-blue-500/20"
+                      : "bg-red-500/10 border-red-500/20"
+                  }`}
+                >
+                  <span
+                    className={`text-2xl font-black italic ${
+                      rightScore.color === "blue"
+                        ? "text-blue-500"
+                        : "text-red-500"
+                    }`}
+                  >
+                    {rightScore.game}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+        </div>
     </div>
 
     {/* Tie Break Label */}
@@ -1019,40 +1092,60 @@ if (isGameEnd) {
   </div>
 
       {/* BUTTONS SECTION - Tactile Experience */}
-  <div className="grid grid-cols-2 gap-3 px-1">
-    {/* BUTTON PLAYER 1 - SLIM VERSION */}
-    <button 
-      onClick={() => handlePoint(1)} 
-      className="group relative h-28 bg-gradient-to-br from-blue-600 to-blue-700 rounded-[1.5rem] overflow-hidden shadow-lg shadow-blue-900/30 active:scale-95 transition-all flex flex-col items-center justify-center border-t border-white/20"
-    >
-      {/* Overlay kilatan saat ditekan */}
-      <div className="absolute inset-0 bg-white/10 opacity-0 group-active:opacity-100 transition-opacity"></div>
-      
-      <span className="relative text-[10px] font-black text-blue-100/60 uppercase tracking-[0.2em] mb-1">
-        Add Point P1
-      </span>
-      <div className="flex items-center gap-2">
-        <span className="relative text-3xl font-black text-white">+</span>
+    <div className="grid grid-cols-2 gap-3 px-1">
+      {/* BUTTON PLAYER 1 - SLIM VERSION */}
+      <button 
+        onClick={() => handlePoint(leftPlayer)}
+        className={`group relative h-28 rounded-[1.5rem] overflow-hidden shadow-lg active:scale-95 transition-all flex flex-col items-center justify-center border-t border-white/20 ${
+          leftMeta.color === "blue"
+            ? "bg-gradient-to-br from-blue-600 to-blue-700 shadow-blue-900/30"
+            : "bg-gradient-to-br from-red-600 to-red-700 shadow-red-900/30"
+        }`}
+      >
+        <div className="absolute inset-0 bg-white/10 opacity-0 group-active:opacity-100 transition-opacity"></div>
         
-      </div>
-    </button>
+        <span
+          className={`relative text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${
+            leftMeta.color === "blue"
+              ? "text-blue-100/60"
+              : "text-red-100/60"
+          }`}
+        >
+          Add Point {leftMeta.label}
+        </span>
 
-    {/* BUTTON PLAYER 2 - SLIM VERSION */}
-    <button 
-      onClick={() => handlePoint(2)} 
-      className="group relative h-28 bg-gradient-to-br from-red-600 to-red-700 rounded-[1.5rem] overflow-hidden shadow-lg shadow-red-900/30 active:scale-95 transition-all flex flex-col items-center justify-center border-t border-white/20"
-    >
-      <div className="absolute inset-0 bg-white/10 opacity-0 group-active:opacity-100 transition-opacity"></div>
-      
-      <span className="relative text-[10px] font-black text-red-100/60 uppercase tracking-[0.2em] mb-1">
-        Add Point P2
-      </span>
-      <div className="flex items-center gap-2">
-        <span className="relative text-3xl font-black text-white">+</span>
-      
-      </div>
-    </button>
-  </div>
+        <div className="flex items-center gap-2">
+          <span className="relative text-3xl font-black text-white">+</span>
+        </div>
+      </button>
+
+          {/* BUTTON PLAYER 2 - SLIM VERSION */}
+      <button 
+        onClick={() => handlePoint(rightPlayer)}
+        className={`group relative h-28 rounded-[1.5rem] overflow-hidden shadow-lg active:scale-95 transition-all flex flex-col items-center justify-center border-t border-white/20 ${
+          rightMeta.color === "blue"
+            ? "bg-gradient-to-br from-blue-600 to-blue-700 shadow-blue-900/30"
+            : "bg-gradient-to-br from-red-600 to-red-700 shadow-red-900/30"
+        }`}
+      >
+        <div className="absolute inset-0 bg-white/10 opacity-0 group-active:opacity-100 transition-opacity"></div>
+        
+        <span
+          className={`relative text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${
+            rightMeta.color === "blue"
+              ? "text-blue-100/60"
+              : "text-red-100/60"
+          }`}
+        >
+          Add Point {rightMeta.label}
+        </span>
+
+        <div className="flex items-center gap-2">
+          <span className="relative text-3xl font-black text-white">+</span>
+        </div>
+      </button>
+
+    </div>
 
     <div className="grid grid-cols-1 gap-4 mt-6">
         <div className="">

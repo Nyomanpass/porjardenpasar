@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import api from "../../api";
 import { Link, useLocation } from "react-router-dom";
+import { Eye } from "lucide-react";
 import { 
   Search, UserPlus, Users2, User, 
   ChevronDown, ChevronUp, X, Trash2, Users 
@@ -18,6 +19,7 @@ function PesertaGanda({ tournamentId, searchTerm: searchTermFromProps }) {
   const [localSearch, setLocalSearch] = useState(""); // State pencarian lokal
   const [collapsedGroups, setCollapsedGroups] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalGanda, setIsModalGanda] = useState(false);
   
   const [currentTournamentId, setCurrentTournamentId] = useState(tournamentId || localStorage.getItem("selectedTournament") || "");
   const [currentTournamentName, setCurrentTournamentName] = useState(localStorage.getItem("selectedTournamentName") || "");
@@ -27,7 +29,7 @@ function PesertaGanda({ tournamentId, searchTerm: searchTermFromProps }) {
   const [modalSearchTerm, setModalSearchTerm] = useState("");
 
   const [alert, setAlert] = useState({ show: false, type: "success", message: "" });
-  const [confirmDelete, setConfirmDelete] = useState({ show: false, teamId: null });
+  const [confirmDelete, setConfirmDelete] = useState({ show: false, pesertaId: null });
 
   const role = localStorage.getItem("role");
   const isAdmin = role === "admin" || role === "panitia";
@@ -49,7 +51,7 @@ function PesertaGanda({ tournamentId, searchTerm: searchTermFromProps }) {
     setLoading(true);
     try {
       const [resPeserta, resKU, resTeams] = await Promise.all([
-        api.get(`/peserta/kelompok-umur?tournamentId=${idToUse}`),
+        api.get(`/peserta/kelompok-umur-ganda?tournamentId=${idToUse}`),
         api.get("/kelompok-umur"),
         api.get(`/double-teams?tournamentId=${idToUse}`)
       ]);
@@ -121,6 +123,32 @@ function PesertaGanda({ tournamentId, searchTerm: searchTermFromProps }) {
       setAlert({ show: true, type: "error", message: err.response?.data?.msg || "Gagal" });
     }
   };
+
+  const handleDeletePeserta = (id) => {
+    setConfirmDelete({ show: true, pesertaId: id, type: "peserta" });
+  };
+
+  const handleConfirmDeletePeserta = async () => {
+  try {
+    await api.delete(`/peserta/${confirmDelete.pesertaId}`);
+
+    setAlert({
+      show: true,
+      type: "success",
+      message: "Peserta berhasil dihapus"
+    });
+
+    fetchData(); // refresh data
+  } catch (err) {
+    setAlert({
+      show: true,
+      type: "error",
+      message: "Gagal menghapus peserta"
+    });
+  } finally {
+    setConfirmDelete({ show: false, pesertaId: null, type: null });
+  }
+};
 
   const handleDeleteTeam = async () => {
     try {
@@ -224,7 +252,15 @@ function PesertaGanda({ tournamentId, searchTerm: searchTermFromProps }) {
           >
             <UserPlus size={16} /> Buat Tim Ganda
           </button>
+
+          <button 
+            onClick={() => setIsModalGanda(true)}
+            className="flex ml-4 items-center gap-2 bg-yellow-600 text-white px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-yellow-100 hover:bg-yellow-500 transition-all"
+          >
+            <Users2 size={16} /> List Peserta Ganda
+          </button>
         </div>
+        
       )}
 
       {/* CONTENT LIST */}
@@ -421,12 +457,14 @@ function PesertaGanda({ tournamentId, searchTerm: searchTermFromProps }) {
                               >
                                 <div className="flex flex-col text-left overflow-hidden">
                                   <span className="truncate pr-2">{p.namaLengkap}</span>
-                                  <span className={`text-[9px] font-bold mt-0.5 ${isOverAge ? 'text-red-500' : 'text-gray-400'}`}>
-                                    Lahir: {new Date(p.tanggalLahir).getFullYear()} • {umurUser} Thn
+                                  <span className="text-[10px] text-gray-400 block mt-0.5 ">
+                                    {p.asalSekolah || "Sekolah Belum Terdata"}
                                   </span>
+                                 
                                 </div>
 
                                 <div className="flex-shrink-0 flex items-center gap-2">
+                                     
                                   {isOverAge ? (
                                     <span className="bg-red-500 text-white text-[7px] px-1.5 py-0.5 rounded-full font-black uppercase">
                                       Over
@@ -464,26 +502,195 @@ function PesertaGanda({ tournamentId, searchTerm: searchTermFromProps }) {
       )}
 
       {confirmDelete.show && (
-  <AlertMessage
-    type="warning"
-    message={`Apakah Anda yakin ingin menghapus tim ganda ini? Data yang dihapus tidak dapat dikembalikan.`}
-    onClose={() => setConfirmDelete({ show: false, teamId: null })}
+          <AlertMessage
+            type="warning"
+            message={
+              confirmDelete.type === "peserta"
+                ? "Apakah Anda yakin ingin menghapus peserta ini? Data tidak bisa dikembalikan."
+                : "Apakah Anda yakin ingin menghapus tim ganda ini? Data tidak bisa dikembalikan."
+            }
+            onClose={() => setConfirmDelete({ show: false, pesertaId: null, teamId: null, type: null })}
+          >
+            <div className="flex flex-col sm:flex-row gap-4 w-full mt-8">
+              <button
+                onClick={() => setConfirmDelete({ show: false, teamId: null })}
+                className="flex-1 order-2 sm:order-1 min-h-[56px] px-8 py-4 rounded-2xl bg-gray-100 text-gray-800 font-black text-sm uppercase tracking-tighter hover:bg-gray-200 active:scale-95 transition-all"
+              >
+                Batal
+              </button>
+              <button
+                onClick={
+                  confirmDelete.type === "peserta"
+                    ? handleConfirmDeletePeserta
+                    : handleDeleteTeam
+                }
+                className="flex-1 order-1 sm:order-2 min-h-[56px] px-8 py-4 rounded-2xl bg-red-600 text-white font-black text-sm uppercase tracking-tighter shadow-[0_10px_20px_rgba(220,38,38,0.3)] hover:bg-red-700 active:scale-95 transition-all"
+              >
+                Ya, Hapus Tim
+              </button>
+            </div>
+          </AlertMessage>
+        )}
+
+   {isModalGanda && (
+  <div 
+    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+    onClick={() => setIsModalGanda(false)}
   >
-    <div className="flex flex-col sm:flex-row gap-4 w-full mt-8">
-      <button
-        onClick={() => setConfirmDelete({ show: false, teamId: null })}
-        className="flex-1 order-2 sm:order-1 min-h-[56px] px-8 py-4 rounded-2xl bg-gray-100 text-gray-800 font-black text-sm uppercase tracking-tighter hover:bg-gray-200 active:scale-95 transition-all"
-      >
-        Batal
-      </button>
-      <button
-        onClick={handleDeleteTeam}
-        className="flex-1 order-1 sm:order-2 min-h-[56px] px-8 py-4 rounded-2xl bg-red-600 text-white font-black text-sm uppercase tracking-tighter shadow-[0_10px_20px_rgba(220,38,38,0.3)] hover:bg-red-700 active:scale-95 transition-all"
-      >
-        Ya, Hapus Tim
-      </button>
+    {/* BOX */}
+    <div 
+      className="bg-white w-[95%] max-w-3xl rounded-2xl p-6 shadow-2xl"
+      onClick={(e) => e.stopPropagation()}
+    >
+
+      {/* HEADER */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-black uppercase tracking-widest text-gray-700">
+          List Peserta Ganda
+        </h2>
+        <button
+          onClick={() => setIsModalGanda(false)}
+          className="text-gray-400 hover:text-red-500 text-lg"
+        >
+          ✕
+        </button>
+      </div>
+
+      {/* SEARCH */}
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+        <input
+          type="text"
+          placeholder="Cari nama pemain..."
+          className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-yellow-500"
+          value={modalSearchTerm}
+          onChange={(e) => setModalSearchTerm(e.target.value)}
+        />
+      </div>
+
+      {/* LIST */}
+      <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+        {kelompokUmur.map((group) => {
+          const available = (group.peserta || []).filter((p) =>
+            p.namaLengkap.toLowerCase().includes(modalSearchTerm.toLowerCase())
+          );
+
+          if (available.length === 0) return null;
+
+          const isCollapsed = collapsedGroups[group.id];
+
+          return (
+            <div
+              key={group.id}
+              className="border border-gray-100 rounded-2xl overflow-hidden shadow-sm bg-white"
+            >
+              
+              {/* 🔥 HEADER (BISA CLICK) */}
+              <button
+                onClick={() => toggleGroup(group.id)}
+                className="w-full flex items-center justify-between p-4 bg-gray-50/50 hover:bg-gray-100/50 transition-all border-b"
+              >
+                <div className="text-left">
+                  <h2 className="text-sm font-black text-gray-900 uppercase tracking-tight">
+                    {group.nama}
+                  </h2>
+                  <span className="text-[10px] font-bold text-yellow-600 uppercase">
+                    {available.length} Peserta
+                  </span>
+                </div>
+
+                {isCollapsed ? (
+                  <ChevronDown size={18} className="text-gray-400" />
+                ) : (
+                  <ChevronUp size={18} className="text-gray-400" />
+                )}
+              </button>
+
+              {/* 🔥 TABLE (BISA HIDE / SHOW) */}
+              {!isCollapsed && (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50/30">
+                        <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase text-center w-12">
+                          No
+                        </th>
+                        <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase">
+                          Nama
+                        </th>
+                        <th className="hidden md:table-cell px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Asal Sekolah</th>
+                        <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase text-center">
+                          Aksi
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody className="divide-y divide-gray-50">
+                      {available.map((p, index) => {
+                        const umurUser = hitungUmurSederhana(p.tanggalLahir);
+
+                        return (
+                          <tr
+                            key={p.id}
+                            className="hover:bg-yellow-50/20 transition group"
+                          >
+                            {/* NO */}
+                            <td className="px-4 py-3 text-xs font-bold text-gray-300 text-center">
+                              {index + 1}
+                            </td>
+
+                            {/* NAMA */}
+                            <td className="px-4 py-3">
+                              <span className="text-sm font-black text-gray-800 block group-hover:text-yellow-600">
+                                {p.namaLengkap}
+                              </span>
+                              <span className="text-[10px] text-gray-400 font-black md:hidden block mt-0.5 tracking-tighter">
+                                {p.asalSekolah || "Sekolah Belum Terdata"}
+                              </span>
+                              <span className="text-[10px] text-gray-400 font-bold">
+                                {new Date(p.tanggalLahir).getFullYear()} • {umurUser} Thn
+                              </span>
+                            </td>
+
+                             <td className="hidden md:table-cell px-6 py-4">
+                                <span className="text-xs font-bold text-gray-600">
+                                  {p.asalSekolah || "-"}
+                                </span>
+                            </td>
+
+                            {/* AKSI */}
+                            <td className="px-4 py-3">
+                              <div className="flex justify-center gap-2">
+                                <Link
+                                  to={`/admin/detail-peserta/${p.id}`}
+                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl"
+                                >
+                                  <Eye size={14} />
+                                </Link>
+
+                                <button
+                                  onClick={() => handleDeletePeserta(p.id)}
+                                  className="p-2 text-red-600 hover:bg-red-50 rounded-xl"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+            </div>
+          );
+        })}
+      </div>
+
     </div>
-  </AlertMessage>
+  </div>
 )}
     </div>
   );

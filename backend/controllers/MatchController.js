@@ -167,7 +167,7 @@ export const generateUndian = async (req, res) => {
 
     // 2. Ambil semua peserta yang statusnya 'verified'
     const allPeserta = await ModelTarget.findAll({ 
-      where: { tournamentId, kelompokUmurId, status: "verified" } 
+      where: { tournamentId, kelompokUmurId, status: "verified", registrationType: kategori  } 
     });
 
     if (allPeserta.length === 0) {

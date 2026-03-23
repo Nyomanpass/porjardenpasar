@@ -37,15 +37,21 @@ export default function Footer() {
             Navigasi
           </h2>
           <ul className="space-y-2 text-[11px] sm:text-sm">
-            {["Beranda", "Turnamen", "Bagan", "Jadwal", "Kontak"].map((item, i) => (
-              <li 
-                key={i} 
+          {[
+            { name: "Beranda", link: "/" },
+            { name: "Turnamen", link: "/tournament" },
+            { name: "Kontak", link: "/contact" },
+          ].map((item, i) => (
+            <li key={i}>
+              <a
+                href={item.link}
                 className="hover:text-yellow-400 transition cursor-pointer"
               >
-                {item}
-              </li>
-            ))}
-          </ul>
+                {item.name}
+              </a>
+            </li>
+          ))}
+        </ul>
         </div>
 
         {/* Sosial */}
@@ -55,14 +61,14 @@ export default function Footer() {
           </h2>
           <div className="flex gap-3">
             <a
-              href="#"
+              href="https://web.facebook.com/peltidenpasar/?locale=id_ID&_rdc=1&_rdr#"
               className="p-2 rounded-full bg-slate-800 hover:bg-yellow-400 
                          hover:text-black transition-all duration-300"
             >
               <Facebook size={16} />
             </a>
             <a
-              href="#"
+              href="https://www.instagram.com/peltidenpasar/"
               className="p-2 rounded-full bg-slate-800 hover:bg-yellow-400 
                          hover:text-black transition-all duration-300"
             >
@@ -87,14 +93,14 @@ export default function Footer() {
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
+            {/* <div className="flex items-center gap-2">
               <Phone size={16} className="text-yellow-400 shrink-0" />
               <span>(+62) 123-456-789</span>
-            </div>
+            </div> */}
 
             <div className="flex items-center gap-2 break-all">
               <Mail size={16} className="text-yellow-400 shrink-0" />
-              <span>peltidenpasar@gmail.com</span>
+              <span>pelti.denpasar01@gmail.com</span>
             </div>
 
           </div>

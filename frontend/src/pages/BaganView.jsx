@@ -64,7 +64,6 @@ const getTiebreakFromLogs = (allLogs, setNum, finalS1, finalS2, gameLimit = 6) =
 
   if (setLogs.length === 0) return null;
 
-  // --- LOGIKA KHUSUS SET 3 (SUPER TIEBREAK) ---
   // Kita cek jika ini set 3, ambil log paling terakhir untuk poinnya
   if (setNum === 3) {
     const lastLog = setLogs[setLogs.length - 1];
@@ -181,7 +180,8 @@ const formatSetScore = (m) => {
         params: {
           kelompokUmurId: kelompokUmurId,
           status: 'verified',
-          tournamentId
+          tournamentId,
+          registrationType: 'single'
         }
       });
       
@@ -244,17 +244,29 @@ const handleExportPDF = async () => {
     });
 
     const pageWidth = pdf.internal.pageSize.getWidth();
-
-    pdf.setFontSize(28);
+    
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(42);
     pdf.text(
       (bagan.Tournament?.name || "PELTI DENPASAR").toUpperCase(),
       pageWidth / 2,
-      40,
+      50,
       { align: "center" }
     );
 
-    pdf.setFontSize(18);
-    pdf.text(bagan.nama, pageWidth / 2, 70, { align: "center" });
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(48);
+
+    pdf.text(
+      bagan.nama.toUpperCase(),
+      pageWidth / 2,
+      95,
+      { align: "center" }
+    );
+
+    // 🔥 GARIS (turunin dikit biar gak nabrak)
+    pdf.setDrawColor(200);
+    pdf.line(40, 115, pageWidth - 40, 115);
 
     pdf.addImage(img, "PNG", 20, 100, canvas.width, canvas.height);
 

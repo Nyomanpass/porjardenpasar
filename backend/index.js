@@ -54,12 +54,14 @@ import scoreRuleRoutes from "./routes/ScoreRuleRoutes.js";
 //panitia
 import panitiaRoutes from "./routes/PanitiaRoutes.js";
 
+
 const app = express();
 
 app.use(cors({
   origin: [
     "https://peltidenpasar.org",
-    "https://www.peltidenpasar.org"
+    "https://www.peltidenpasar.org",
+    "http://localhost:5173"
   ]
 }));
 
@@ -113,6 +115,7 @@ app.use("/api", scoreRuleRoutes);
 
 //import panitia
 app.use("/api", panitiaRoutes);
+
 
 
 app.use((err, req, res, next) => {

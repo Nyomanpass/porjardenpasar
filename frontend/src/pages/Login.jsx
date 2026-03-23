@@ -82,7 +82,7 @@ export default function Login() {
             className="w-20 h-20 mb-2"
           />
           <h1 className="text-xl font-bold text-gray-800">
-            PELTI DENPASAR
+            PORSENIJAR DENPASAR
           </h1>
           <p className="text-sm text-gray-600 -mt-1">
             Persatuan Lawn Tenis Indonesia
@@ -158,7 +158,7 @@ export default function Login() {
         </form>
 
         {/* Link daftar */}
-        <p className="text-center text-sm text-gray-600 mt-4">
+        {/* <p className="text-center text-sm text-gray-600 mt-4">
           Belum memiliki akun?{" "}
           <a
             href="/register"
@@ -166,7 +166,7 @@ export default function Login() {
           >
             Daftar Sekarang
           </a>
-        </p>
+        </p> */}
       </div>
     </div>
   );

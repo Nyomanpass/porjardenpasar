@@ -65,13 +65,13 @@ function TournamentArchive() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 py-12 lg:py-24 px-4 sm:px-8 lg:px-16">
+        <div className="min-h-screen bg-gray-50 py-12 lg:py-24 px-4 sm:px-8 lg:px-16 mt-24">
             <div className="text-center mb-10">
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight text-balance">
                 Rekam Jejak & Jadwal
               </h2>
               <p className="text-sm sm:text-base text-gray-500 italic mt-2 max-w-2xl mx-auto">
-                Semua Turnamen Pelti Denpasar
+                Semua Turnamen PORJAR Denpasar
               </p>
               <div className="w-12 h-1 bg-yellow-600 mx-auto mt-4 rounded-full"></div>
             </div>
@@ -82,7 +82,7 @@ function TournamentArchive() {
                     Belum ada data turnamen yang ditemukan.
                 </p>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-7xl mx-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-1 gap-6 lg:gap-8 max-w-4xl mx-auto">
   {tournaments.map((t) => (
     <div
       key={t.id}
@@ -90,7 +90,7 @@ function TournamentArchive() {
                  transform hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden"
     >
       {/* POSTER - Dibuat lebih pendek (slim) */}
-      <div className="relative h-48 lg:h-56 w-full overflow-hidden">
+      {/* <div className="relative h-48 lg:h-56 w-full overflow-hidden">
         {t.poster ? (
           <img
             src={`${BASE_URL}/${t.poster}`} 
@@ -103,7 +103,7 @@ function TournamentArchive() {
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-      </div>
+      </div> */}
 
       {/* CONTENT - Padding dikurangi agar slim */}
       <div className="p-5 lg:p-6 flex-grow flex flex-col">

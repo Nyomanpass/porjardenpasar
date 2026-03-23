@@ -566,7 +566,7 @@ const getTiebreakFromLogs = (allLogs, setNum, finalS1, finalS2) => {
                     : 'bg-blue-50 text-blue-600 border-blue-100'
                 }`}>
                     {isDouble ? <Users size={10}/> : <User size={10}/>}
-                    {isDouble ? 'Single' : 'Double'}
+                    {isDouble ? 'Double' : 'Single'}
                 </span>
               </div>
               <div className="text-[9px] md:text-[10px] font-black text-slate-300 uppercase tracking-tight">

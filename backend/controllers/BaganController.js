@@ -21,7 +21,7 @@ export const createBagan = async (req, res) => {
       });
     } else {
       listPeserta = await Peserta.findAll({
-        where: { kelompokUmurId, tournamentId, status: "verified" }
+        where: { kelompokUmurId, tournamentId, status: "verified", registrationType: kategori }
       });
     }
 
@@ -30,7 +30,7 @@ export const createBagan = async (req, res) => {
 
     // 2. Tentukan tipe (Contoh: <= 4 orang maka Round Robin)
     let tipe = "roundrobin";
-    if (jumlah > 4) tipe = "knockout";
+    if (jumlah > 5) tipe = "knockout";
 
     const bagan = await Bagan.create({
       nama: `${isDouble ? '(Ganda)' : '(Tunggal)'} ${kelompokumur.nama}`,

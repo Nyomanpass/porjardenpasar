@@ -1,6 +1,7 @@
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { Op } from "sequelize";
 import { Peserta, KelompokUmur, Tournament } from "../models/index.js";
 
 // ====== Konfigurasi upload file ======
@@ -74,11 +75,45 @@ export const getPesertaById = async (req, res) => {
 
 export const createPeserta = async (req, res) => {
   try {
-    const { namaLengkap, nomorWhatsapp, tanggalLahir, kelompokUmurId, tournamentId, asalSekolah  } = req.body;
-    
-    // Gunakan Optional Chaining ?. untuk keamanan
-    const fotoKartu = req.files?.fotoKartu ? req.files.fotoKartu[0].path : null;
-    const buktiBayar = req.files?.buktiBayar ? req.files.buktiBayar[0].path : null;
+    const {
+      namaLengkap,
+      nomorWhatsapp,
+      tanggalLahir,
+      kelompokUmurId,
+      tournamentId,
+      asalSekolah,
+      alamatSekolah,
+      nik,
+      registrationType
+    } = req.body;
+
+    // VALIDASI WAJIB
+    if (!nik) {
+      return res.status(400).json({ message: "NIK wajib diisi" });
+    }
+
+    if (!registrationType) {
+      return res.status(400).json({ message: "Jenis pendaftaran wajib dipilih" });
+    }
+
+    const existingPeserta = await Peserta.findOne({
+      where: {
+        nik,
+        kelompokUmurId,
+        registrationType,
+      },
+    });
+
+    if (existingPeserta) {
+      return res.status(400).json({
+        message:
+          "Anda Sudah Terdaftar dengan NIK ini sudah terdaftar di kategori dan jenis pendaftaran yang sama.",
+      });
+    }
+
+    // FILE
+    const fotoKartu = req.files?.fotoKartu?.[0]?.path || null;
+    const buktiBayar = req.files?.buktiBayar?.[0]?.path || null;
 
     const newData = await Peserta.create({
       namaLengkap,
@@ -86,27 +121,73 @@ export const createPeserta = async (req, res) => {
       tanggalLahir,
       kelompokUmurId,
       tournamentId,
-      asalSekolah: asalSekolah || null,  
+      asalSekolah: asalSekolah || null,
+      alamatSekolah: alamatSekolah || null,
+      nik,
+      registrationType,
       fotoKartu,
-      buktiBayar, 
-      status: "pending"
+      buktiBayar,
+      status: "pending",
     });
 
     res.status(201).json(newData);
   } catch (error) {
+    console.error("ERROR DETAIL:", error); // 🔥 WAJIB
+
+    if (error.name === "SequelizeUniqueConstraintError") {
+      return res.status(400).json({
+        message: "Data peserta sudah terdaftar (duplicate).",
+      });
+    }
+
     res.status(500).json({ message: error.message });
-  }
+    }
 };
 
 export const updatePeserta = async (req, res) => {
   try {
-    // Cari peserta
     const peserta = await Peserta.findByPk(req.params.id);
-    if (!peserta) return res.status(404).json({ message: "Peserta tidak ditemukan" });
+    if (!peserta) {
+      return res.status(404).json({ message: "Peserta tidak ditemukan" });
+    }
 
-    const { namaLengkap, nomorWhatsapp, tanggalLahir, kelompokUmurId, tournamentId, status, asalSekolah } = req.body;
+    const {
+      namaLengkap,
+      nomorWhatsapp,
+      tanggalLahir,
+      kelompokUmurId,
+      asalSekolah,
+      alamatSekolah,
+      nik,
+      registrationType,
+      status
+    } = req.body;
 
-    // 1. Logika Update FOTO KARTU (Cek req.files)
+        // 🔥 AMBIL NILAI FINAL
+    const finalNik = nik || peserta.nik;
+    const finalKelompokUmurId = kelompokUmurId || peserta.kelompokUmurId;
+    const finalRegistrationType = registrationType || peserta.registrationType;
+
+    // 🔥 CEK DUPLIKAT (WAJIB DI SINI)
+    const existingPeserta = await Peserta.findOne({
+      where: {
+        nik: finalNik,
+        kelompokUmurId: finalKelompokUmurId,
+        registrationType: finalRegistrationType,
+        id: {
+          [Op.ne]: peserta.id,
+        },
+      },
+    });
+
+    if (existingPeserta) {
+      return res.status(400).json({
+        message:
+          "Anda sudah terdaftar dengan NIK ini di kategori dan jenis pendaftaran yang sama.",
+      });
+    }
+
+    // UPDATE FOTO
     if (req.files?.fotoKartu) {
       if (peserta.fotoKartu && fs.existsSync(peserta.fotoKartu)) {
         fs.unlinkSync(peserta.fotoKartu);
@@ -114,7 +195,7 @@ export const updatePeserta = async (req, res) => {
       peserta.fotoKartu = req.files.fotoKartu[0].path;
     }
 
-    // 2. Logika Update BUKTI BAYAR (Cek req.files)
+    // UPDATE BUKTI BAYAR
     if (req.files?.buktiBayar) {
       if (peserta.buktiBayar && fs.existsSync(peserta.buktiBayar)) {
         fs.unlinkSync(peserta.buktiBayar);
@@ -122,20 +203,25 @@ export const updatePeserta = async (req, res) => {
       peserta.buktiBayar = req.files.buktiBayar[0].path;
     }
 
-    // 3. Update data menggunakan method update() agar lebih bersih
     await peserta.update({
       namaLengkap: namaLengkap || peserta.namaLengkap,
       nomorWhatsapp: nomorWhatsapp || peserta.nomorWhatsapp,
       tanggalLahir: tanggalLahir || peserta.tanggalLahir,
       kelompokUmurId: kelompokUmurId || peserta.kelompokUmurId,
-      tournamentId: tournamentId || peserta.tournamentId,
-      asalSekolah: asalSekolah ?? peserta.asalSekolah, 
+      asalSekolah: asalSekolah ?? peserta.asalSekolah,
+      alamatSekolah: alamatSekolah ?? peserta.alamatSekolah,
+      nik: nik || peserta.nik,
+      registrationType: registrationType || peserta.registrationType,
       status: status || peserta.status,
       fotoKartu: peserta.fotoKartu,
       buktiBayar: peserta.buktiBayar
     });
 
-    res.json({ message: "Peserta berhasil diupdate", data: peserta });
+    res.json({
+      message: "Peserta berhasil diupdate",
+      data: peserta
+    });
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -202,7 +288,46 @@ export const getPesertaByKelompokUmur = async (req, res) => {
   try {
     const { tournamentId } = req.query;
 
-    const pesertaFilter = { status: "verified" };
+    const pesertaFilter = { 
+      status: "verified",
+      registrationType: "single" // 🔥 TAMBAHAN INI
+    };
+
+    // Kalau tournamentId dikirim dari frontend → tambahkan filter
+    if (tournamentId) {
+      pesertaFilter.tournamentId = tournamentId;
+    }
+
+    const result = await KelompokUmur.findAll({
+      attributes: ["id", "nama"],
+      include: [
+        {
+          model: Peserta,
+          as: "peserta",
+          attributes: ["id", "namaLengkap", "status", "kelompokUmurId", "tournamentId", "asalSekolah", 'nomorWhatsapp', 'tanggalLahir'],
+          where: pesertaFilter,
+          required: false, // supaya kelompok umur tetap muncul meskipun tidak ada peserta
+        },
+      ],
+    });
+
+    res.json(result);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Terjadi kesalahan server" });
+  }
+};
+
+
+export const getPesertaGanda = async (req, res) => {
+  try {
+    const { tournamentId } = req.query;
+
+    const pesertaFilter = { 
+      status: "verified",
+      registrationType: "double" // 🔥 TAMBAHAN INI
+    };
 
     // Kalau tournamentId dikirim dari frontend → tambahkan filter
     if (tournamentId) {
@@ -233,7 +358,7 @@ export const getPesertaByKelompokUmur = async (req, res) => {
 
 export const getPesertaFiltered = async (req, res) => {
   try {
-    const { kelompokUmurId, status, tournamentId } = req.query; // tambahkan tournamentId
+    const { kelompokUmurId, status, tournamentId, registrationType } = req.query; // tambahkan tournamentId
     let whereClause = {};
 
     if (kelompokUmurId) {
@@ -246,6 +371,10 @@ export const getPesertaFiltered = async (req, res) => {
       whereClause.tournamentId = tournamentId; // filter berdasarkan tournament
     }
 
+    if (registrationType) {
+      whereClause.registrationType = registrationType;
+    }
+
     const peserta = await Peserta.findAll({
       where: whereClause,
        attributes: [
@@ -256,7 +385,8 @@ export const getPesertaFiltered = async (req, res) => {
         "kelompokUmurId",
         "tournamentId",
         "nomorWhatsapp",
-        "tanggalLahir"
+        "tanggalLahir",
+        "registrationType" 
       ],
       include: [
         { 

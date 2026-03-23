@@ -9,7 +9,7 @@ import "@fontsource/poppins/400.css"; // Regular
 import "@fontsource/poppins/700.css"; // Bold
 
 
-import Home from "./pages/Home";
+
 import Login from "./pages/Login";
 import DashboardLayout from "./pages/DashboardLayout";
 
@@ -31,7 +31,7 @@ import Tournament from "./pages/admin/Tournament";
 import PesertaGanda from "./components/admin/PesertaGanda"; 
 import UiSettings from "./pages/UiSettings";
 import Profile from "./pages/admin/Profile";
-
+import Register from "./pages/Register";
 
 
 //landing page
@@ -55,7 +55,7 @@ export default function App() {
       <BrowserRouter>
       <ScrollToTop/>
         <Routes>
-          <Route index element={<Home />} />
+          <Route index element={<TournamentUser />} />
         
           <Route path="/login" element={<Login />} />
           <Route path="/daftar-peserta" element={<PesertaForm/>}/>
@@ -69,6 +69,7 @@ export default function App() {
           <Route path="/atlet" element={<Athlete/>}/>
           <Route path="/anggota" element={<Club/>}/>    
           <Route path="/tournament-detail" element={<TournamentDetailPage/>}/>
+          {/* <Route path="/register" element={<Register/>}/> */}
       
           <Route
             path="/admin"

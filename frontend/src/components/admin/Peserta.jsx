@@ -226,83 +226,95 @@ function Peserta({ tournamentId, searchTerm: searchTermFromProps }) {
 
                   {!isCollapsed && (
                   <div className="overflow-x-auto border-t border-gray-50">
-  <table className="w-full text-left border-collapse">
-    <thead>
-      <tr className="bg-gray-50/30">
-        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center w-16">No</th>
-        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Nama</th>
-        
-        {/* Kolom Kontak hanya untuk Admin */}
-        {(role === "admin" || role === "panitia") && (
-          <th className="hidden md:table-cell px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Kontak</th>
-        )}
-        
-        <th className="hidden md:table-cell px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Aksi</th>
-      </tr>
-    </thead>
-    <tbody className="divide-y divide-gray-50">
-      {filteredPeserta.map((p, index) => (
-        <tr key={p.id} className="hover:bg-yellow-50/20 transition-colors group">
-          <td className="px-6 py-4 text-xs font-bold text-gray-300 text-center">{index + 1}</td>
-          
-          <td className="px-6 py-4">
-            <span className="text-sm font-black text-gray-800 block group-hover:text-yellow-600 transition-colors">
-              {p.namaLengkap}
-            </span>
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50/30">
+                          <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center w-16">No</th>
+                          <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Nama</th>
+                          
+                          {/* Kolom Kontak hanya untuk Admin */}
+                          {(role === "admin" || role === "panitia") && (
+                            <th className="hidden md:table-cell px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Kontak</th>
+                          )}
 
-            {/* TANGGAL LAHIR: Hanya Admin yang lihat */}
-            {(role === "admin" || role === "panitia") && (
-              <span className="text-[10px] text-gray-400 font-bold uppercase block">
-                {p.tanggalLahir || "Tgl Lahir -"}
-              </span>
-            )}
+                          <th className="hidden md:table-cell px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Asal Sekolah</th>
+                          
+                          <th className="hidden md:table-cell px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {filteredPeserta.map((p, index) => (
+                          <tr key={p.id} className="hover:bg-yellow-50/20 transition-colors group">
+                            <td className="px-6 py-4 text-xs font-bold text-gray-300 text-center">{index + 1}</td>
+                            
+                            <td className="px-6 py-4">
+                              <span className="text-sm font-black text-gray-800 block group-hover:text-yellow-600 transition-colors">
+                                {p.namaLengkap}
+                              </span>
 
-            {/* STATUS (Verified/Pending): Muncul di Mobile DAN Desktop (jika bukan admin) */}
-            <div className={`${(role === "admin" || role === "panitia") ? "md:hidden" : "block"} mt-1`}>
-              <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[8px] font-black uppercase
-                ${p.status === "pending" ? "bg-yellow-100 text-yellow-700" : 
-                  p.status === "verified" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                {p.status}
-              </span>
-            </div>
-          </td>
+                              <span className="text-[10px] text-gray-400 font-black md:hidden block mt-0.5 tracking-tighter">
+                                {p.asalSekolah || "Sekolah Belum Terdata"}
+                              </span>
 
-          {/* KOLOM KONTAK: Hanya Admin */}
-          {(role === "admin" || role === "panitia") && (
-            <td className="hidden md:table-cell px-6 py-4">
-              <span className="text-xs font-bold text-gray-600 block">{p.nomorWhatsapp || "-"}</span>
-              {/* Status untuk Admin di Desktop muncul di sini */}
-              <span className={`inline-flex items-center mt-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase
-                  ${p.status === "pending" ? "bg-yellow-100 text-yellow-700" : 
-                    p.status === "verified" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                {p.status}
-              </span>
-            </td>
-          )}
+                              {/* TANGGAL LAHIR: Hanya Admin yang lihat */}
+                              {(role === "admin" || role === "panitia") && (
+                                <span className="text-[10px] text-gray-400 font-bold uppercase block">
+                                  {p.tanggalLahir || "Tgl Lahir -"}
+                                </span>
+                              )}
 
-          <td className="hidden md:table-cell px-6 py-4">
-            <div className="flex justify-center gap-2">
-              {(role === "admin" || role === "panitia") ? (
-                <>
-                  <Link to={`/${role}/detail-peserta/${p.id}`} className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
-                    <Eye size={16} />
-                  </Link>
-                  <button onClick={() => handleDelete(p.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-all">
-                    <Trash2 size={16} />
-                  </button>
-                </>
-              ) : (
-                <span className="text-gray-300 text-[9px] font-black uppercase italic border px-2 py-1 rounded-lg">
-                  Limited View
-                </span>
-              )}
-            </div>
-          </td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
-</div>
+                              {/* STATUS (Verified/Pending): Muncul di Mobile DAN Desktop (jika bukan admin) */}
+                              <div className={`${(role === "admin" || role === "panitia") ? "md:hidden" : "block"} mt-1`}>
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[8px] font-black uppercase
+                                  ${p.status === "pending" ? "bg-yellow-100 text-yellow-700" : 
+                                    p.status === "verified" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                                  {p.status}
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* KOLOM KONTAK: Hanya Admin */}
+                            {(role === "admin" || role === "panitia") && (
+                              <td className="hidden md:table-cell px-6 py-4">
+                                <span className="text-xs font-bold text-gray-600 block">{p.nomorWhatsapp || "-"}</span>
+                                {/* Status untuk Admin di Desktop muncul di sini */}
+                                <span className={`inline-flex items-center mt-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase
+                                    ${p.status === "pending" ? "bg-yellow-100 text-yellow-700" : 
+                                      p.status === "verified" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                                  {p.status}
+                                </span>
+                              </td>
+                            )}
+
+                            <td className="hidden md:table-cell px-6 py-4">
+                              <span className="text-xs font-bold text-gray-600">
+                                {p.asalSekolah || "-"}
+                              </span>
+                            </td>
+
+                            <td className="hidden md:table-cell px-6 py-4">
+                              <div className="flex justify-center gap-2">
+                                {(role === "admin" || role === "panitia") ? (
+                                  <>
+                                    <Link to={`/${role}/detail-peserta/${p.id}`} className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
+                                      <Eye size={16} />
+                                    </Link>
+                                    <button onClick={() => handleDelete(p.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-all">
+                                      <Trash2 size={16} />
+                                    </button>
+                                  </>
+                                ) : (
+                                  <span className="text-gray-300 text-[9px] font-black uppercase italic border px-2 py-1 rounded-lg">
+                                    Limited View
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                   )}
                 </div>
               );

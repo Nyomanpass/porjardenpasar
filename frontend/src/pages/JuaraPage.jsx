@@ -3,6 +3,9 @@ import api from '../api';
 import { Trophy, Award, Crown, CheckCircle, Layout, FileText, Users2, User } from "lucide-react"; 
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import JuaraPDF from './JuaraPDF'; 
+import * as XLSX from "xlsx-js-style";
+import { saveAs } from "file-saver";
+
 
 const JuaraPage = () => {
   const [winnersData, setWinnersData] = useState([]);
@@ -100,6 +103,92 @@ const JuaraPage = () => {
     if (filterKategori === "all") return true;
     return data.kategori === filterKategori;
   });
+
+const exportExcel = () => {
+  const dataExport = filteredWinners.map((data) => {
+    const w = data.winners;
+
+    return {
+      KELOMPOK: data.baganNama,
+      "JUARA 1": renderWinnerName(w?.juara1),
+      "JUARA 2": renderWinnerName(w?.juara2),
+      "JUARA 3": Array.isArray(w?.juara3)
+        ? w.juara3.map(renderWinnerName).join(" & ")
+        : renderWinnerName(w?.juara3),
+    };
+  });
+
+  // 🔥 buat sheet TANPA header otomatis
+  const ws = XLSX.utils.json_to_sheet(dataExport, {
+    origin: "A2",
+    skipHeader: true,
+  });
+
+  // 🔥 header manual
+  XLSX.utils.sheet_add_aoa(
+    ws,
+    [["KELOMPOK", "JUARA 1", "JUARA 2", "JUARA 3"]],
+    { origin: "A1" }
+  );
+
+  // 🔥 auto width biar tidak mepet
+  ws["!cols"] = [
+    { wch: 30 },
+    { wch: 30 },
+    { wch: 30 },
+    { wch: 30 },
+  ];
+
+  // 🔥 tinggi header
+  ws["!rows"] = [{ hpt: 28 }];
+
+  // 🔥 style header
+  ["A1", "B1", "C1", "D1"].forEach((cell) => {
+    if (ws[cell]) {
+      ws[cell].s = {
+        font: {
+          bold: true,
+          color: { rgb: "FFFFFF" },
+        },
+        fill: {
+          fgColor: { rgb: "2563EB" }, // biru
+        },
+        alignment: {
+          horizontal: "center",
+          vertical: "center",
+        },
+      };
+    }
+  });
+
+  // 🔥 style isi + border + padding
+  Object.keys(ws).forEach((cell) => {
+    if (cell[0] === "!") return;
+
+    if (!ws[cell].s) ws[cell].s = {};
+
+    ws[cell].s = {
+      ...ws[cell].s,
+      alignment: {
+        vertical: "center",
+        horizontal: "left",
+        wrapText: true,
+      },
+      border: {
+        top: { style: "thin" },
+        bottom: { style: "thin" },
+        left: { style: "thin" },
+        right: { style: "thin" },
+      },
+    };
+  });
+
+  // 🔥 bikin file
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Juara");
+
+  XLSX.writeFile(wb, `Juara_${tName}.xlsx`);
+};
 
   if (isLoading) return <div className="flex justify-center items-center h-screen font-bold text-gray-500">Memuat Data Juara...</div>;
   if (error) return <div className="flex justify-center items-center h-screen text-red-600 font-bold">{error}</div>;
@@ -227,6 +316,13 @@ const JuaraPage = () => {
         )}
       </PDFDownloadLink>
     )}
+
+    <button
+      onClick={exportExcel}
+      className="bg-green-500 ml-4 hover:bg-green-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2"
+    >
+      Export Excel
+    </button>
   </div>
 )}
 </div>

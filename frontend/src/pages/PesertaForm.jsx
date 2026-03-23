@@ -23,16 +23,19 @@ const [tournamentStatus, setTournamentStatus] = useState("checking");
 
 
 
-  const [formData, setFormData] = useState({
-    namaLengkap: "",
-    nomorWhatsapp: "",
-    tanggalLahir: "",
-    kelompokUmurId: "",
-    tournamentId: "",
-    asalSekolah: "",
-    fotoKartu: null,
-    buktiBayar: null,
-  });
+const [formData, setFormData] = useState({
+  namaLengkap: "",
+  nomorWhatsapp: "",
+  tanggalLahir: "",
+  kelompokUmurId: "",
+  tournamentId: "",
+  asalSekolah: "",
+  alamatSekolah: "",
+  nik: "",
+  registrationType: "",
+  fotoKartu: null,
+  buktiBayar: null,
+});
 
   const [kelompokList, setKelompokList] = useState([]);
   const [tournamentList, setTournamentList] = useState([]);
@@ -193,9 +196,19 @@ const [tournamentStatus, setTournamentStatus] = useState("checking");
       setSuccess("Pendaftaran berhasil! Data Anda akan diverifikasi panitia.");
       
       setFormData({
-        namaLengkap: "", nomorWhatsapp: "", tanggalLahir: "",
-        kelompokUmurId: "", tournamentId: "",   asalSekolah: "",  fotoKartu: null, buktiBayar: null,
+        namaLengkap: "",
+        nomorWhatsapp: "",
+        tanggalLahir: "",
+        kelompokUmurId: "",
+        tournamentId: "",
+        asalSekolah: "",
+        alamatSekolah: "",
+        nik: "",
+        registrationType: "",
+        fotoKartu: null,
+        buktiBayar: null,
       });
+
       setPreviewFoto(null);
       setPreviewBayar(null);
       setSelectedTournament(null);
@@ -478,6 +491,22 @@ if (tournamentStatus === "closed") {
                     </div>
                   </div>
                 )}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase ml-1">
+                    Jenis Pendaftaran
+                  </label>
+                  <select
+                    name="registrationType"
+                    value={formData.registrationType}
+                    onChange={handleChange}
+                    required
+                    className="w-full border-2 border-slate-100 p-3.5 rounded-xl bg-white outline-none focus:border-primary transition text-sm shadow-sm"
+                  >
+                    <option value="">-- Pilih --</option>
+                    <option value="single">Single</option>
+                    <option value="double">Double</option>
+                  </select>
+                </div>
 
                 {/* BIODATA PESERTA */}
                 <div className="grid md:grid-cols-2 gap-4">
@@ -490,6 +519,8 @@ if (tournamentStatus === "closed") {
                     <input type="text" name="nomorWhatsapp" value={formData.nomorWhatsapp} onChange={handleChange} className="w-full border-2 border-slate-100 p-3.5 rounded-xl outline-none focus:border-primary transition text-sm shadow-sm" placeholder="08xxxxxxxx" required />
                   </div>
                 </div>
+
+                
 
                 <div className="grid md:grid-cols-2 gap-4">
                  <div className="space-y-2 w-full">
@@ -545,29 +576,58 @@ if (tournamentStatus === "closed") {
                   </div>
                 </div>
 
+                  <div className="space-y-2">
+    <label className="text-xs font-bold text-slate-500 uppercase ml-1">
+      NIK
+    </label>
+    <input
+      type="text"
+      name="nik"
+      value={formData.nik}
+      onChange={handleChange}
+      required
+      placeholder="16 digit NIK"
+      className="w-full border-2 border-slate-100 p-3.5 rounded-xl outline-none focus:border-primary transition text-sm shadow-sm"
+    />
+  </div>
+
+
                 {/* ASAL SEKOLAH (MUNCUL JIKA TOURNAMENT WAJIB SEKOLAH) */}
                 {selectedTournament?.requireSchool && (
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase ml-1">
-                      Asal Sekolah
-                    </label>
-                    <input
-                      type="text"
-                      name="asalSekolah"
-                      value={formData.asalSekolah}
-                      onChange={handleChange}
-                      placeholder="Contoh: SMA Negeri 1 Denpasar"
-                      required
-                      className="w-full border-2 border-slate-100 p-3.5 rounded-xl outline-none focus:border-primary transition text-sm shadow-sm"
-                    />
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-500 uppercase ml-1">
+                        Asal Sekolah
+                      </label>
+                      <input
+                        type="text"
+                        name="asalSekolah"
+                        value={formData.asalSekolah}
+                        onChange={handleChange}
+                        required
+                        className="w-full border-2 border-slate-100 p-3.5 rounded-xl outline-none focus:border-primary transition text-sm shadow-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-500 uppercase ml-1">
+                        Alamat Sekolah
+                      </label>
+                      <input
+                        type="text"
+                        name="alamatSekolah"
+                        value={formData.alamatSekolah}
+                        onChange={handleChange}
+                        className="w-full border-2 border-slate-100 p-3.5 rounded-xl outline-none focus:border-primary transition text-sm shadow-sm"
+                      />
+                    </div>
                   </div>
                 )}
-
 
                 {/* FOTO IDENTITAS */}
                 <div className="space-y-3 p-5 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
                   <label className="text-xs font-bold text-slate-600 flex items-center gap-2">
-                    <Upload size={16} className="text-primary"/> Foto Identitas (KK/KTP)
+                    <Upload size={16} className="text-primary"/> Surat Keterangan Sekolah
                   </label>
                   <input
                     ref={fileInputRef}

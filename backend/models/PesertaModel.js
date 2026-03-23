@@ -22,6 +22,21 @@ export const Peserta = sequelize.define("Peserta", {
     type: DataTypes.STRING(150),
     allowNull: true
   },
+   nik: { 
+    type: DataTypes.STRING(20), 
+    allowNull: false,
+  },
+
+  registrationType: {
+    type: DataTypes.ENUM("single", "double"),
+    allowNull: false
+  },
+
+  alamatSekolah: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  },
+
   fotoKartu: { type: DataTypes.STRING, allowNull: true },
   buktiBayar: { 
   type: DataTypes.STRING, 
@@ -41,6 +56,13 @@ export const Peserta = sequelize.define("Peserta", {
 }, {
   tableName: "peserta",
   timestamps: true,
+  indexes: [
+    {
+      unique: true,
+      fields: ["nik", "kelompokUmurId", "registrationType"],
+    },
+  ],
+
 });
 
 
