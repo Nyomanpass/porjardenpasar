@@ -765,6 +765,7 @@ if (isRoundRobin) {
                   renderSeedComponent={(props) => {
                     const match = props.seed.raw;
                     const isDouble = bagan.kategori === "double";
+                    const roundIndex = props.roundIndex;
 
                     return (
                       <Seed
@@ -798,9 +799,15 @@ if (isRoundRobin) {
                                   : "bg-[#f3f4f6] text-[#1f2937] border-[#e5e7eb]"
                                 }`}
                             >
-                              {isDouble 
-                                ? (match.doubleTeam1?.namaTim || (match.doubleTeam1Id ? "TBD" : "BYE"))
-                                : (match.peserta1?.namaLengkap || (match.peserta1Id ? "TBD" : "BYE"))}
+                             {isDouble 
+                                ? (match.doubleTeam1?.namaTim 
+                                    || (match.doubleTeam1Id 
+                                        ? "TBD" 
+                                        : (roundIndex === 0 ? "BYE" : "-")))
+                                : (match.peserta1?.namaLengkap 
+                                    || (match.peserta1Id 
+                                        ? "TBD" 
+                                        : (roundIndex === 0 ? "BYE" : "-")))}
                             </SeedTeam>
 
                             <SeedTeam
@@ -810,9 +817,15 @@ if (isRoundRobin) {
                                   : "bg-[#f3f4f6] text-[#1f2937] border-[#e5e7eb]"
                                 }`}
                             >
-                              {isDouble 
-                                ? (match.doubleTeam2?.namaTim || (match.doubleTeam2Id ? "TBD" : "BYE"))
-                                : (match.peserta2?.namaLengkap || (match.peserta2Id ? "TBD" : "BYE"))}
+                               {isDouble 
+                                ? (match.doubleTeam2?.namaTim 
+                                    || (match.doubleTeam2Id 
+                                        ? "TBD" 
+                                        : (roundIndex === 0 ? "BYE" : "-")))
+                                : (match.peserta2?.namaLengkap 
+                                    || (match.peserta2Id 
+                                        ? "TBD" 
+                                        : (roundIndex === 0 ? "BYE" : "-")))}
                             </SeedTeam>
                           </div>
                         </SeedItem>
