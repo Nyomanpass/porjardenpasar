@@ -589,8 +589,7 @@ export const getJuara = async (req, res) => {
       return res.json({ juara1, juara2, juara3 });
     }
 
-    // LOGIKA ROUND ROBIN GANDA
-// ===== LOGIKA ROUND ROBIN =====
+
 // ===== ROUND ROBIN =====
 if (bagan.tipe === "roundrobin") {
   const isDouble = bagan.kategori === "double";
@@ -598,8 +597,8 @@ if (bagan.tipe === "roundrobin") {
   const matches = await Match.findAll({
     where: { baganId, status: "selesai" },
     include: [
-      { model: Peserta, as: "peserta1", attributes: ["id", "namaLengkap"] },
-      { model: Peserta, as: "peserta2", attributes: ["id", "namaLengkap"] },
+      { model: Peserta, as: "peserta1", attributes: ["id", "namaLengkap", "asalSekolah"] },
+      { model: Peserta, as: "peserta2", attributes: ["id", "namaLengkap", "asalSekolah"] },
       { 
         model: DoubleTeam, as: "doubleTeam1",
         include: ["Player1", "Player2"]

@@ -104,64 +104,150 @@ const JuaraPage = () => {
     return data.kategori === filterKategori;
   });
 
+const getSekolah = (winner) => {
+  if (!winner) return "-";
+
+  // DOUBLE → cukup ambil 1 sekolah (Player1 saja)
+  if (winner.Player1 && winner.Player2) {
+    return winner.Player1?.asalSekolah || "-";
+  }
+
+  // SINGLE / TIM
+  return winner.asalSekolah || "-";
+};
+
+
 const exportExcel = () => {
-  const dataExport = filteredWinners.map((data) => {
+  let no = 1;
+  let currentRow = 1;
+
+  const rows = [];
+  const merges = [];
+
+  filteredWinners.forEach((data) => {
     const w = data.winners;
+    const startRow = currentRow;
 
-    return {
-      KELOMPOK: data.baganNama,
-      "JUARA 1": renderWinnerName(w?.juara1),
-      "JUARA 2": renderWinnerName(w?.juara2),
-      "JUARA 3": Array.isArray(w?.juara3)
-        ? w.juara3.map(renderWinnerName).join(" & ")
-        : renderWinnerName(w?.juara3),
+    const tingkat = data.baganNama;
+
+    const pushRow = (juara, atlet, sekolah, medali) => {
+      rows.push({
+        NO: no,
+        TINGKAT: tingkat,
+        JUARA: juara,
+        "NAMA ATLET": atlet,
+        "ASAL SEKOLAH": sekolah,
+        MEDALI: medali,
+      });
+      currentRow++;
     };
+
+    // JUARA 1
+    if (w?.juara1) {
+      pushRow(
+        "I",
+        renderWinnerName(w.juara1),
+        getSekolah(w.juara1),
+        "Emas"
+      );
+    }
+
+    // JUARA 2
+    if (w?.juara2) {
+      pushRow(
+        "II",
+        renderWinnerName(w.juara2),
+        getSekolah(w.juara2),
+        "Perak"
+      );
+    }
+
+    // JUARA 3 (bisa lebih dari 1)
+    if (w?.juara3) {
+      if (Array.isArray(w.juara3)) {
+        w.juara3.forEach((p) => {
+          pushRow(
+            "III",
+            renderWinnerName(p),
+            getSekolah(p),
+            "Perunggu"
+          );
+        });
+      } else {
+        pushRow(
+          "III",
+          renderWinnerName(w.juara3),
+          getSekolah(w.juara3),
+          "Perunggu"
+        );
+      }
+    }
+
+    const endRow = currentRow - 1;
+
+    // 🔥 MERGE NO & TINGKAT
+    if (endRow > startRow) {
+      merges.push(
+        { s: { r: startRow, c: 0 }, e: { r: endRow, c: 0 } }, // NO
+        { s: { r: startRow, c: 1 }, e: { r: endRow, c: 1 } }  // TINGKAT
+      );
+    }
+
+    no++;
   });
 
-  // 🔥 buat sheet TANPA header otomatis
-  const ws = XLSX.utils.json_to_sheet(dataExport, {
-    origin: "A2",
+  // 🔥 TANPA HEADER OTOMATIS
+  const ws = XLSX.utils.json_to_sheet(rows, {
     skipHeader: true,
+    origin: "A2",
   });
 
-  // 🔥 header manual
+  // 🔥 HEADER MANUAL
   XLSX.utils.sheet_add_aoa(
     ws,
-    [["KELOMPOK", "JUARA 1", "JUARA 2", "JUARA 3"]],
+    [["NO", "TINGKAT", "JUARA", "NAMA ATLET", "ASAL SEKOLAH", "MEDALI"]],
     { origin: "A1" }
   );
 
-  // 🔥 auto width biar tidak mepet
+  // 🔥 APPLY MERGE
+  ws["!merges"] = merges;
+
+  // 🔥 WIDTH KOLOM
   ws["!cols"] = [
+    { wch: 5 },
+    { wch: 25 },
+    { wch: 10 },
     { wch: 30 },
-    { wch: 30 },
-    { wch: 30 },
-    { wch: 30 },
+    { wch: 25 },
+    { wch: 12 },
   ];
 
-  // 🔥 tinggi header
-  ws["!rows"] = [{ hpt: 28 }];
-
-  // 🔥 style header
-  ["A1", "B1", "C1", "D1"].forEach((cell) => {
+  // 🔥 STYLE HEADER (abu muda)
+  ["A1", "B1", "C1", "D1", "E1", "F1"].forEach((cell) => {
     if (ws[cell]) {
       ws[cell].s = {
         font: {
           bold: true,
-          color: { rgb: "FFFFFF" },
+          color: { rgb: "000000" },
         },
         fill: {
-          fgColor: { rgb: "2563EB" }, // biru
+          fgColor: { rgb: "E5E7EB" }, // abu muda
         },
         alignment: {
           horizontal: "center",
           vertical: "center",
         },
+        border: {
+          top: { style: "thin" },
+          bottom: { style: "thin" },
+          left: { style: "thin" },
+          right: { style: "thin" },
+        },
       };
     }
   });
 
-  // 🔥 style isi + border + padding
+  // 🔥 STYLE SEMUA CELL
   Object.keys(ws).forEach((cell) => {
     if (cell[0] === "!") return;
 
@@ -171,7 +257,10 @@ const exportExcel = () => {
       ...ws[cell].s,
       alignment: {
         vertical: "center",
-        horizontal: "left",
+        horizontal:
+          cell.startsWith("A") || cell.startsWith("B")
+            ? "center"
+            : "left",
         wrapText: true,
       },
       border: {
@@ -183,12 +272,12 @@ const exportExcel = () => {
     };
   });
 
-  // 🔥 bikin file
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Juara");
 
   XLSX.writeFile(wb, `Juara_${tName}.xlsx`);
 };
+
 
   if (isLoading) return <div className="flex justify-center items-center h-screen font-bold text-gray-500">Memuat Data Juara...</div>;
   if (error) return <div className="flex justify-center items-center h-screen text-red-600 font-bold">{error}</div>;

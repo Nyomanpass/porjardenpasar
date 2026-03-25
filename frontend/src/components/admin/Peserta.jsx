@@ -5,6 +5,7 @@ import api from "../../api";
 import { Link, useLocation } from "react-router-dom"; // Tambahkan useLocation
 import { Eye, Trash2, Search, ChevronDown, ChevronUp, User, Users2 } from "lucide-react"; // Tambahkan Users2
 import AlertMessage from "../AlertMessage";
+import XLSX from "xlsx-js-style";
 
 function Peserta({ tournamentId, searchTerm: searchTermFromProps }) {
   const location = useLocation();
@@ -84,6 +85,68 @@ function Peserta({ tournamentId, searchTerm: searchTermFromProps }) {
     );
   }
 
+
+const exportPesertaExcel = async () => {
+  try {
+    const tournamentId = localStorage.getItem("selectedTournament");
+
+    const res = await api.get(`/peserta/getexel?tournamentId=${tournamentId}`);
+    const data = res.data;
+
+    const singleRows = [];
+    const doubleRows = [];
+
+    data.forEach((ku) => {
+      (ku.peserta || []).forEach((p) => {
+        const row = {
+          TIPE: (p.registrationType || "-").toUpperCase(),
+          KELOMPOK: ku.nama,
+          NAMA: p.namaLengkap,
+          SEKOLAH: p.asalSekolah || "-",
+          TANGGAL_LAHIR: p.tanggalLahir || "-",
+          NIK: p.nik || "-",
+        };
+
+        if (p.registrationType === "single") {
+          singleRows.push(row);
+        } else if (p.registrationType === "double") {
+          doubleRows.push(row);
+        }
+      });
+    });
+
+    // 🔥 GABUNG: SINGLE DULU BARU DOUBLE
+    const combined = [...singleRows, ...doubleRows];
+
+    // 🔥 TAMBAH NOMOR
+    const finalRows = combined.map((row, index) => ({
+      NO: index + 1,
+      ...row,
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(finalRows);
+
+    // 🔥 WIDTH
+    ws["!cols"] = [
+      { wch: 5 },
+      { wch: 10 },
+      { wch: 25 },
+      { wch: 30 },
+      { wch: 25 },
+      { wch: 15 },
+      { wch: 25 },
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Peserta");
+
+    XLSX.writeFile(wb, "Data_Peserta.xlsx");
+
+  } catch (err) {
+    console.error("Export error:", err);
+  }
+};
+
   return (
     <div className="w-full">
       {/* --- HEADER ADMIN OTOMATIS (Sesuai Request Anda) --- */}
@@ -106,7 +169,17 @@ function Peserta({ tournamentId, searchTerm: searchTermFromProps }) {
                 </div>
             </div>
 
+             {(role === "admin" || role === "panitia") && (
+              <button
+                    onClick={exportPesertaExcel}
+                      className="px-4 py-2 bg-green-600 text-white rounded-xl font-bold text-xs uppercase hover:bg-green-700 transition-all shadow"
+                >
+                  Export Excel
+                </button>
+              )}
             </div>
+            
+
 
            
             <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -135,6 +208,7 @@ function Peserta({ tournamentId, searchTerm: searchTermFromProps }) {
                   >
                     <Users2 size={14} /> Double
                   </Link>
+
 
                 </div>
               )}

@@ -69,9 +69,12 @@ const styles = StyleSheet.create({
 const JadwalPDF = ({ jadwal = [], lapanganList = [], selectedTanggal, tournamentName }) => {
 
   const sortedLapangan = [...lapanganList].sort((a, b) => {
-    const numA = parseInt(a.replace(/\D/g, '')) || 0;
-    const numB = parseInt(b.replace(/\D/g, '')) || 0;
-    return numA - numB;
+    const getLetter = (str) => {
+      const match = str.match(/[A-Z]$/i);
+      return match ? match[0].toUpperCase() : '';
+    };
+
+    return getLetter(a).localeCompare(getLetter(b));
   });
 
   const validJadwal = jadwal.filter(j => j.waktuMulai && j.lapangan?.nama);

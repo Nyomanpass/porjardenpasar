@@ -10,7 +10,8 @@ import {
   verifyPeserta,
   getPesertaByKelompokUmur,
   getPesertaFiltered,
-  getPesertaGanda
+  getPesertaGanda,
+  getPesertaExel
 } from "../controllers/PesertaController.js";
 
 const router = express.Router();
@@ -22,6 +23,7 @@ const cpUpload = upload.fields([
 
 router.get("/peserta", getPesertaByStatus);
 router.get('/peserta/kelompok-umur', getPesertaByKelompokUmur);
+router.get('/peserta/getexel', getPesertaExel);
 router.get('/peserta/kelompok-umur-ganda', getPesertaGanda);
 router.get('/pesertafilter', getPesertaFiltered);
 router.get("/peserta/:id", getPesertaById);

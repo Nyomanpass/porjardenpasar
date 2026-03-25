@@ -304,7 +304,7 @@ export const getPesertaByKelompokUmur = async (req, res) => {
         {
           model: Peserta,
           as: "peserta",
-          attributes: ["id", "namaLengkap", "status", "kelompokUmurId", "tournamentId", "asalSekolah", 'nomorWhatsapp', 'tanggalLahir'],
+          attributes: ["id", "namaLengkap", "status", "kelompokUmurId", "tournamentId", "asalSekolah", 'nomorWhatsapp', 'tanggalLahir', "nik", "registrationType"],
           where: pesertaFilter,
           required: false, // supaya kelompok umur tetap muncul meskipun tidak ada peserta
         },
@@ -319,6 +319,64 @@ export const getPesertaByKelompokUmur = async (req, res) => {
   }
 };
 
+
+export const getPesertaExel = async (req, res) => {
+  try {
+    const { tournamentId } = req.query;
+
+    const pesertaFilter = { 
+      status: "verified",
+    };
+
+    if (tournamentId) {
+      pesertaFilter.tournamentId = tournamentId;
+    }
+
+    const result = await KelompokUmur.findAll({
+      attributes: ["id", "nama"],
+      include: [
+        {
+          model: Peserta,
+          as: "peserta",
+          attributes: [
+            "id",
+            "namaLengkap",
+            "status",
+            "kelompokUmurId",
+            "tournamentId",
+            "asalSekolah",
+            "nomorWhatsapp",
+            "tanggalLahir",
+            "nik",
+            "registrationType",
+          ],
+          where: pesertaFilter,
+          required: false,
+        },
+      ],
+    });
+
+    // 🔥 SORT DI SINI
+    const sortedResult = result.map((ku) => {
+      const pesertaSorted = (ku.peserta || []).sort((a, b) => {
+        const order = { single: 1, double: 2 };
+
+        return (order[a.registrationType] || 99) - (order[b.registrationType] || 99);
+      });
+
+      return {
+        ...ku.toJSON(),
+        peserta: pesertaSorted,
+      };
+    });
+
+    res.json(sortedResult);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Terjadi kesalahan server" });
+  }
+};
 
 export const getPesertaGanda = async (req, res) => {
   try {
@@ -340,7 +398,7 @@ export const getPesertaGanda = async (req, res) => {
         {
           model: Peserta,
           as: "peserta",
-          attributes: ["id", "namaLengkap", "status", "kelompokUmurId", "tournamentId", "asalSekolah", 'nomorWhatsapp', 'tanggalLahir'],
+          attributes: ["id", "namaLengkap", "status", "kelompokUmurId", "tournamentId", "asalSekolah", 'nomorWhatsapp', 'tanggalLahir', "nik", "registrationType"],
           where: pesertaFilter,
           required: false, // supaya kelompok umur tetap muncul meskipun tidak ada peserta
         },
