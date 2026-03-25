@@ -671,25 +671,40 @@ if (bagan.tipe === "roundrobin") {
 });
 
   // sorting dengan tie-break
-  const ranking = Object.values(klasemen).sort((a, b) => {
-    // 1️⃣ POIN
-    if (b.poin !== a.poin) return b.poin - a.poin;
+const ranking = Object.values(klasemen).sort((a, b) => {
+  // 1️⃣ POIN
+  if (b.poin !== a.poin) return b.poin - a.poin;
 
-    // 2️⃣ SELISIH GAME
-    const diffA = a.gameMenang - a.gameKalah;
-    const diffB = b.gameMenang - b.gameKalah;
-    if (diffB !== diffA) return diffB - diffA;
+  // cari semua peserta dengan poin sama
+  const samePointGroup = Object.values(klasemen).filter(
+    x => x.poin === a.poin
+  );
 
-    // 3️⃣ HEAD TO HEAD
+  // ===============================
+  // 🟢 KASUS 2 PESERTA (HEAD TO HEAD)
+  // ===============================
+  if (samePointGroup.length === 2) {
     const h2h = a.headToHead[b.peserta.id];
-    if (h2h) {
-      if (h2h === a.peserta.id) return -1;
-      if (h2h === b.peserta.id) return 1;
-    }
+    if (h2h === a.peserta.id) return -1;
+    if (h2h === b.peserta.id) return 1;
+  }
 
-    // 4️⃣ fallback terakhir
-    return a.peserta.id - b.peserta.id;
-  });
+  // ======================================
+  // 🟢 KASUS ≥ 3 PESERTA (SELISIH GAME)
+  // ======================================
+  const diffA = a.gameMenang - a.gameKalah;
+  const diffB = b.gameMenang - b.gameKalah;
+
+  if (diffB !== diffA) return diffB - diffA;
+
+  // kalau masih sama → total game menang
+  if (b.gameMenang !== a.gameMenang) {
+    return b.gameMenang - a.gameMenang;
+  }
+
+  // fallback terakhir
+  return a.peserta.id - b.peserta.id;
+});
 
 
   return res.json({
