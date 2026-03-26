@@ -209,8 +209,9 @@ const formatSetScore = (m) => {
     }
   }, [bagan]);
 
-  
+
 const handleExportPDF = async () => {
+  // Tentukan elemen berdasarkan tipe
   const bracketEl = document.getElementById(
     isRoundRobin ? "roundrobin-pdf" : "bracket-container"
   );
@@ -219,98 +220,89 @@ const handleExportPDF = async () => {
   if (!bracketEl || !bagan) return;
 
   try {
-
-
-    await new Promise(r => setTimeout(r, 200));
-
+    // 1. Persiapan elemen (khusus Round Robin yang disembunyikan)
+    const originalStyles = bracketEl.style.cssText;
     if (isRoundRobin) {
       bracketEl.style.display = "block";
       bracketEl.style.position = "absolute";
-      bracketEl.style.left = "-9999px"; // supaya tidak terlihat user
+      bracketEl.style.left = "-9999px";
+      bracketEl.style.width = "1200px"; // Beri lebar pasti agar tabel tidak menciut
     }
 
+    await new Promise(r => setTimeout(r, 300));
+
+    // 2. POTRET dengan onclone untuk FIX OKLCH
     const canvas = await html2canvas(bracketEl, {
-      scale: 2,
+      scale: 1.5, // 1.5 lebih aman untuk memori browser
       useCORS: true,
-      backgroundColor: "#ffffff"
+      backgroundColor: "#ffffff",
+      width: bracketEl.scrollWidth,
+      height: bracketEl.scrollHeight,
+      onclone: (clonedDoc) => {
+        // ANTI-OKLCH: Cari semua elemen dan ubah warna oklch menjadi HEX/RGB
+        const all = clonedDoc.getElementsByTagName("*");
+        for (let el of all) {
+          const s = window.getComputedStyle(el);
+          if (s.color.includes("oklch")) el.style.color = "#1f2937"; 
+          if (s.backgroundColor.includes("oklch")) el.style.backgroundColor = "#ffffff";
+          if (s.borderColor.includes("oklch")) el.style.borderColor = "#e5e7eb";
+        }
+        // Pastikan elemen yang di-clone terlihat penuh
+        const target = clonedDoc.getElementById(isRoundRobin ? "roundrobin-pdf" : "bracket-container");
+        if (target) {
+          target.style.position = "static";
+          target.style.display = "block";
+          target.style.left = "0";
+        }
+      }
     });
 
-    const img = canvas.toDataURL("image/png", 1.0); // pakai PNG biar warna aman
+    const img = canvas.toDataURL("image/png");
 
+    // 3. Buat PDF
     const pdf = new jsPDF({
       orientation: canvas.width > canvas.height ? "l" : "p",
       unit: "px",
-      format: [canvas.width + 40, canvas.height + 140]
+      format: [canvas.width + 80, canvas.height + 200]
     });
 
     const pageWidth = pdf.internal.pageSize.getWidth();
     
+    // Header
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(42);
-    pdf.text(
-      (bagan.Tournament?.name || "PELTI DENPASAR").toUpperCase(),
-      pageWidth / 2,
-      50,
-      { align: "center" }
-    );
+    pdf.setFontSize(36);
+    pdf.text((bagan.Tournament?.name || "PELTI DENPASAR").toUpperCase(), pageWidth / 2, 50, { align: "center" });
+    
+    pdf.setFontSize(40);
+    pdf.text(bagan.nama.toUpperCase(), pageWidth / 2, 100, { align: "center" });
 
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(48);
-
-    pdf.text(
-      bagan.nama.toUpperCase(),
-      pageWidth / 2,
-      95,
-      { align: "center" }
-    );
-
-    // 🔥 GARIS (turunin dikit biar gak nabrak)
+    // Garis
     pdf.setDrawColor(200);
-    pdf.line(40, 115, pageWidth - 40, 115);
+    pdf.line(40, 120, pageWidth - 40, 120);
 
-    pdf.addImage(img, "PNG", 20, 100, canvas.width, canvas.height);
+    // Gambar Utama
+    pdf.addImage(img, "PNG", 40, 140, canvas.width, canvas.height);
 
+    // 4. Halaman Keterangan (Hanya untuk Bagan Biasa)
     if (ketPdfEl && !isRoundRobin) {
       ketPdfEl.style.display = "block";
       await new Promise(r => setTimeout(r, 200));
-
-      const ketCanvas = await html2canvas(ketPdfEl, {
-        scale: 2,
-        backgroundColor: "#ffffff"
-      });
-
+      const ketCanvas = await html2canvas(ketPdfEl, { scale: 1.5, backgroundColor: "#ffffff" });
       pdf.addPage();
-      pdf.addImage(
-        ketCanvas.toDataURL("image/png", 1.0),
-        "PNG",
-        20,
-        40,
-        ketCanvas.width,
-        ketCanvas.height
-      );
-
+      pdf.addImage(ketCanvas.toDataURL("image/png"), "PNG", 40, 40, ketCanvas.width, ketCanvas.height);
       ketPdfEl.style.display = "none";
     }
 
     pdf.save(`Bagan-${bagan.nama}.pdf`);
 
-    if (isRoundRobin) {
-      bracketEl.style.display = "none";
-      bracketEl.style.position = "";
-      bracketEl.style.left = "";
-    }
-
-
+    // Kembalikan style asli
+    bracketEl.style.cssText = originalStyles;
 
   } catch (err) {
-    console.error(err);
-    alert("Export gagal. Coba reload halaman.");
+    console.error("Detail Error:", err);
+    alert("Export gagal karena masalah format warna browser. Coba lagi.");
   }
 };
-
-
-
-
 
 const handleLockBagan = async () => {
   try {
@@ -629,281 +621,286 @@ if (isRoundRobin) {
       )}
 
         {/* Bracket */}
-        <div 
-          id="bracket-container" 
-          className="w-full bg-white overflow-x-auto rounded-3xl" 
-        >
-          {isRoundRobin ? (
-            /* TAMPILAN ROUND ROBIN (TABEL) */
-            <div className="space-y-6">
-
-  <div className="w-full overflow-x-auto rounded-2xl md:border md:border-gray-200 md:shadow-md">
-    
-    <table className="min-w-[780px] w-full border-separate border-spacing-y-2 text-sm md:text-base">
-      
-      <thead>
-        <tr className="bg-gray-100 text-gray-700">
-          <th className="px-4 py-4 text-left">Match</th>
-          <th className="px-4 py-4 text-left">Peserta 1</th>
-          <th className="px-4 py-4 text-center">VS</th>
-          <th className="px-4 py-4 text-left">Peserta 2</th>
-          <th className="px-4 py-4 text-center">Skor</th>
-          {(role === "admin" || role === "panitia") && (
-            <th className="px-4 py-4 text-center">Aksi</th>
-          )}
-        </tr>
-      </thead>
-
-      <tbody>
-        {bagan.Matches.map((m, index) => (
-          <tr
-            key={m.id}
-            className="bg-white hover:bg-blue-50 transition-all rounded-xl shadow-sm"
+        <div id="pdf-wrapper">
+          <div 
+            id="bracket-container" 
+            className="w-full bg-white overflow-x-auto rounded-3xl" 
           >
-            <td className="px-4 py-5 font-semibold text-gray-500">
-              #{index + 1}
-            </td>
+            {isRoundRobin ? (
+              /* TAMPILAN ROUND ROBIN (TABEL) */
+              <div className="space-y-6">
 
-            <td
-              className={`px-4 py-5 font-semibold text-md ${
-                (isDouble
-                  ? m.winnerDoubleId === m.doubleTeam1Id
-                  : m.winnerId === m.peserta1Id)
-                  ? "text-blue-600"
-                  : "text-gray-800"
-              }`}
-            >
-              {isDouble
-                ? (m.doubleTeam1?.namaTim ||
-                  (m.doubleTeam1Id ? "TBD" : "BYE"))
-                : (m.peserta1?.namaLengkap ||
-                  (m.peserta1Id ? "TBD" : "BYE"))}
-            </td>
+                <div className="w-full overflow-x-auto rounded-2xl md:border md:border-gray-200 md:shadow-md">
+                  
+                  <table className="min-w-[780px] w-full border-separate border-spacing-y-2 text-sm md:text-base">
+                    
+                    <thead>
+                      <tr className="bg-gray-100 text-gray-700">
+                        <th className="px-4 py-4 text-left">Match</th>
+                        <th className="px-4 py-4 text-left">Peserta 1</th>
+                        <th className="px-4 py-4 text-center">VS</th>
+                        <th className="px-4 py-4 text-left">Peserta 2</th>
+                        <th className="px-4 py-4 text-center">Skor</th>
+                        {(role === "admin" || role === "panitia") && (
+                          <th className="px-4 py-4 text-center">Aksi</th>
+                        )}
+                      </tr>
+                    </thead>
 
-            <td className="px-4 py-5 text-center text-gray-400 font-bold text-md">
-              VS
-            </td>
+                    <tbody>
+                      {bagan.Matches.map((m, index) => (
+                        <tr
+                          key={m.id}
+                          className="bg-white hover:bg-blue-50 transition-all rounded-xl shadow-sm"
+                        >
+                          <td className="px-4 py-5 font-semibold text-gray-500">
+                            #{index + 1}
+                          </td>
 
-            <td
-              className={`px-4 py-5 font-semibold text-md ${
-                (isDouble
-                  ? m.winnerDoubleId === m.doubleTeam2Id
-                  : m.winnerId === m.peserta2Id)
-                  ? "text-blue-600"
-                  : "text-gray-800"
-              }`}
-            >
-              {isDouble
-                ? (m.doubleTeam2?.namaTim ||
-                  (m.doubleTeam2Id ? "TBD" : "BYE"))
-                : (m.peserta2?.namaLengkap ||
-                  (m.peserta2Id ? "TBD" : "BYE"))}
-            </td>
+                          <td
+                            className={`px-4 py-5 font-semibold text-md ${
+                              (isDouble
+                                ? m.winnerDoubleId === m.doubleTeam1Id
+                                : m.winnerId === m.peserta1Id)
+                                ? "text-blue-600"
+                                : "text-gray-800"
+                            }`}
+                          >
+                            {isDouble
+                              ? (m.doubleTeam1?.namaTim ||
+                                (m.doubleTeam1Id ? "TBD" : "BYE"))
+                              : (m.peserta1?.namaLengkap ||
+                                (m.peserta1Id ? "TBD" : "BYE"))}
+                          </td>
 
-            <td className="px-4 py-5 text-center">
-              <span className="bg-gray-100 px-4 py-2 rounded-lg font-bold text-sm shadow-sm">
-                {formatSetScore(m)}
-              </span>
-            </td>
+                          <td className="px-4 py-5 text-center text-gray-400 font-bold text-md">
+                            VS
+                          </td>
 
-            {(role === "admin" || role === "panitia") && (
-              <td className="px-4 py-5 text-center">
-                {(
-                  (!isDouble && !m.winnerId) ||
-                  (isDouble && !m.winnerDoubleId)
-                ) ? (
-                  <button
-                    onClick={() => {
-                      setSelectedMatch(m);
-                      setModalType("winner");
-                    }}
-                    className="bg-blue-100 text-blue-700 px-4 py-2 rounded-full font-semibold hover:bg-blue-200 transition"
-                  >
-                    Input Skor
-                  </button>
-                ) : (
-                  <span className="text-sm text-gray-400 italic">
-                    Selesai
-                  </span>
-                )}
-              </td>
-            )}
-          </tr>
-        ))}
-      </tbody>
+                          <td
+                            className={`px-4 py-5 font-semibold text-md ${
+                              (isDouble
+                                ? m.winnerDoubleId === m.doubleTeam2Id
+                                : m.winnerId === m.peserta2Id)
+                                ? "text-blue-600"
+                                : "text-gray-800"
+                            }`}
+                          >
+                            {isDouble
+                              ? (m.doubleTeam2?.namaTim ||
+                                (m.doubleTeam2Id ? "TBD" : "BYE"))
+                              : (m.peserta2?.namaLengkap ||
+                                (m.peserta2Id ? "TBD" : "BYE"))}
+                          </td>
 
-    </table>
-  </div>
+                          <td className="px-4 py-5 text-center">
+                            <span className="bg-gray-100 px-4 py-2 rounded-lg font-bold text-sm shadow-sm">
+                              {formatSetScore(m)}
+                            </span>
+                          </td>
 
-</div>
+                          {(role === "admin" || role === "panitia") && (
+                            <td className="px-4 py-5 text-center">
+                              {(
+                                (!isDouble && !m.winnerId) ||
+                                (isDouble && !m.winnerDoubleId)
+                              ) ? (
+                                <button
+                                  onClick={() => {
+                                    setSelectedMatch(m);
+                                    setModalType("winner");
+                                  }}
+                                  className="bg-blue-100 text-blue-700 px-4 py-2 rounded-full font-semibold hover:bg-blue-200 transition"
+                                >
+                                  Input Skor
+                                </button>
+                              ) : (
+                                <span className="text-sm text-gray-400 italic">
+                                  Selesai
+                                </span>
+                              )}
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
 
-          ) : (
-           
+                  </table>
+                </div>
 
-          <div
-                className="w-full overflow-hidden rounded-3xl"
-                style={{
-                  backgroundColor: "#ffffff",
-                  border: "1px solid #e5e7eb",
-                  boxShadow: "0 10px 30px rgba(0,0,0,0.08)"
+              </div>
+
+            ) : (
+            <div
+                  className="w-full overflow-hidden rounded-3xl"
+                  style={{
+                    backgroundColor: "#ffffff",
+                    border: "1px solid #e5e7eb",
+                    boxShadow: "0 10px 30px rgba(0,0,0,0.08)"
+                  }}
+                >
+
+              {/* Wrapper scroll manual */}
+              <div 
+                className="overflow-x-auto" 
+                style={{ 
+                  display: 'block', 
+                  width: '100%',
+                  WebkitOverflowScrolling: 'touch',
+                  backgroundColor: '#ffffff' // HEX supaya PDF aman
                 }}
               >
-
-            {/* Wrapper scroll manual */}
-            <div 
-              className="overflow-x-auto" 
-              style={{ 
-                display: 'block', 
-                width: '100%',
-                WebkitOverflowScrolling: 'touch',
-                backgroundColor: '#ffffff' // HEX supaya PDF aman
-              }}
-            >
-              
-              {/* Gunakan max-content agar div ini selebar total semua babak pertandingan */}
-            <div style={{ display: 'inline-block', minWidth: '100%' }} className="p-4 md:p-10">
                 
-                <Bracket
-                  rounds={rounds}
-                  /* Tambahkan properti mobileBreakpoint jika library mendukung untuk mematikannya */
-                  mobileBreakpoint={0} 
-                  renderSeedComponent={(props) => {
-                    const match = props.seed.raw;
-                    const isDouble = bagan.kategori === "double";
-                    const roundIndex = props.roundIndex;
+                {/* Gunakan max-content agar div ini selebar total semua babak pertandingan */}
+               <div style={{ display: 'inline-block', minWidth: '100%' }} className="p-4 md:p-10">
+                  
+                  <Bracket
+                    rounds={rounds}
+                    /* Tambahkan properti mobileBreakpoint jika library mendukung untuk mematikannya */
+                    mobileBreakpoint={0} 
+                    renderSeedComponent={(props) => {
+                      const match = props.seed.raw;
+                      const isDouble = bagan.kategori === "double";
+                      const roundIndex = props.roundIndex;
 
-                    return (
-                      <Seed
-                        {...props}
-                        onClick={() => {
-                          setSelectedMatch(match);
-                          const hasS1 = isDouble ? match.doubleTeam1Id : match.peserta1Id;
-                          const hasS2 = isDouble ? match.doubleTeam2Id : match.peserta2Id;
-                          const isFinished = isDouble ? !!match.winnerDoubleId : !!match.winnerId;
+                      return (
+                        <Seed
+                          {...props}
+                          onClick={() => {
+                            setSelectedMatch(match);
+                            const hasS1 = isDouble ? match.doubleTeam1Id : match.peserta1Id;
+                            const hasS2 = isDouble ? match.doubleTeam2Id : match.peserta2Id;
+                            const isFinished = isDouble ? !!match.winnerDoubleId : !!match.winnerId;
 
-                          if (hasS1 !== null && hasS2 !== null && !isFinished) {
-                            setModalType("winner");
-                          }
+                            if (hasS1 !== null && hasS2 !== null && !isFinished) {
+                              setModalType("winner");
+                            }
+                          }}
+                        >
+                          <SeedItem>
+                            <div className="relative" style={{ backgroundColor: "#ffffff" }}>
+                              {/* TAMPILAN ASLI KAMU (GAYA LAMA) */}
+                              {formatSetScore(match) && (
+                                <div className="absolute -top-3 -right-3 z-10">
+                                  <span style={{ color: "#000000" }} className="font-bold text-md px-2 py-0.5">
+                                    {formatSetScore(match)}
+                                  </span>
+                                </div>
+                              )}
+
+                              <SeedTeam
+                                className={`rounded-lg min-w-[220px] px-3 py-2 text-start text-lg font-medium border-2 
+                                  ${(isDouble ? match.winnerDoubleId === match.doubleTeam1Id : match.winnerId === match.peserta1Id)
+                                    ? "bg-[#fef3c7] text-[#78350f] border-[#fcd34d]"
+                                    : "bg-[#f3f4f6] text-[#1f2937] border-[#e5e7eb]"
+                                  }`}
+                              >
+                              {isDouble 
+                                  ? (match.doubleTeam1?.namaTim 
+                                      || (match.doubleTeam1Id 
+                                          ? "TBD" 
+                                          : (roundIndex === 0 ? "BYE" : "-")))
+                                  : (match.peserta1?.namaLengkap 
+                                      || (match.peserta1Id 
+                                          ? "TBD" 
+                                          : (roundIndex === 0 ? "BYE" : "-")))}
+                              </SeedTeam>
+
+                              <SeedTeam
+                                className={`rounded-lg min-w-[220px] px-3 py-2 mt-2 text-start text-lg font-medium border-2 
+                                  ${(isDouble ? match.winnerDoubleId === match.doubleTeam2Id : match.winnerId === match.peserta2Id)
+                                    ? "bg-[#fef3c7] text-[#78350f] border-[#fcd34d]"
+                                    : "bg-[#f3f4f6] text-[#1f2937] border-[#e5e7eb]"
+                                  }`}
+                              >
+                                {isDouble 
+                                  ? (match.doubleTeam2?.namaTim 
+                                      || (match.doubleTeam2Id 
+                                          ? "TBD" 
+                                          : (roundIndex === 0 ? "BYE" : "-")))
+                                  : (match.peserta2?.namaLengkap 
+                                      || (match.peserta2Id 
+                                          ? "TBD" 
+                                          : (roundIndex === 0 ? "BYE" : "-")))}
+                              </SeedTeam>
+                            </div>
+                          </SeedItem>
+                        </Seed>
+                      );
+                    }}
+                  />
+                </div>
+                  {thirdPlaceMatch && (
+                    <div className="mt-12 flex justify-center pb-10" style={{ backgroundColor: '#ffffff' }}>
+                      <div 
+                        className="rounded-2xl" 
+                        style={{ 
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #fde047', // border-yellow-300 manual
+                          padding: '24px',
+                          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' // shadow-lg manual
                         }}
                       >
-                        <SeedItem>
-                          <div className="relative" style={{ backgroundColor: "#ffffff" }}>
-                            {/* TAMPILAN ASLI KAMU (GAYA LAMA) */}
-                            {formatSetScore(match) && (
-                              <div className="absolute -top-3 -right-3 z-10">
-                                <span style={{ color: "#000000" }} className="font-bold text-md px-2 py-0.5">
-                                  {formatSetScore(match)}
-                                </span>
-                              </div>
-                            )}
+                        <div className="flex items-center justify-between mb-4">
+                          {/* TITLE */}
+                          <h3 className="text-lg font-bold" style={{ color: '#ca8a04' }}>
+                            Perebutan Juara 3
+                          </h3>
 
-                            <SeedTeam
-                              className={`rounded-lg min-w-[220px] px-3 py-2 text-start text-lg font-medium border-2 
-                                ${(isDouble ? match.winnerDoubleId === match.doubleTeam1Id : match.winnerId === match.peserta1Id)
-                                  ? "bg-[#fef3c7] text-[#78350f] border-[#fcd34d]"
-                                  : "bg-[#f3f4f6] text-[#1f2937] border-[#e5e7eb]"
-                                }`}
-                            >
-                             {isDouble 
-                                ? (match.doubleTeam1?.namaTim 
-                                    || (match.doubleTeam1Id 
-                                        ? "TBD" 
-                                        : (roundIndex === 0 ? "BYE" : "-")))
-                                : (match.peserta1?.namaLengkap 
-                                    || (match.peserta1Id 
-                                        ? "TBD" 
-                                        : (roundIndex === 0 ? "BYE" : "-")))}
-                            </SeedTeam>
+                          {/* SCORE */}
+                          {formatSetScore(thirdPlaceMatch) && (
+                            <div className="font-bold" style={{ color: '#1f2937' }}>
+                              {formatSetScore(thirdPlaceMatch)}
+                            </div>
+                          )}
+                        </div>
 
-                            <SeedTeam
-                              className={`rounded-lg min-w-[220px] px-3 py-2 mt-2 text-start text-lg font-medium border-2 
-                                ${(isDouble ? match.winnerDoubleId === match.doubleTeam2Id : match.winnerId === match.peserta2Id)
-                                  ? "bg-[#fef3c7] text-[#78350f] border-[#fcd34d]"
-                                  : "bg-[#f3f4f6] text-[#1f2937] border-[#e5e7eb]"
-                                }`}
-                            >
-                               {isDouble 
-                                ? (match.doubleTeam2?.namaTim 
-                                    || (match.doubleTeam2Id 
-                                        ? "TBD" 
-                                        : (roundIndex === 0 ? "BYE" : "-")))
-                                : (match.peserta2?.namaLengkap 
-                                    || (match.peserta2Id 
-                                        ? "TBD" 
-                                        : (roundIndex === 0 ? "BYE" : "-")))}
-                            </SeedTeam>
+                        {/* 🔥 HORIZONTAL */}
+                        <div className="flex items-center gap-4">
+                          {/* PLAYER 1 */}
+                          <div 
+                            className="min-w-[180px] text-center rounded-lg px-3 py-2 text-lg font-medium border-2"
+                            style={
+                              (bagan.kategori === "double"
+                                ? thirdPlaceMatch.winnerDoubleId === thirdPlaceMatch.doubleTeam1Id
+                                : thirdPlaceMatch.winnerId === thirdPlaceMatch.peserta1Id)
+                                ? { backgroundColor: '#fef3c7', color: '#78350f', borderColor: '#fcd34d' }
+                                : { backgroundColor: '#f3f4f6', color: '#1f2937', borderColor: '#e5e7eb' }
+                            }
+                          >
+                            {bagan.kategori === "double"
+                              ? thirdPlaceMatch.doubleTeam1?.namaTim || "-"
+                              : thirdPlaceMatch.peserta1?.namaLengkap || "-"}
                           </div>
-                        </SeedItem>
-                      </Seed>
-                    );
-                  }}
-                />
-                {/* 🔥 TARUH DI SINI */}
-                {thirdPlaceMatch && (
-                  <div className="mt-12 flex justify-center">
-                    
-                    <div className="bg-white border border-yellow-300 rounded-2xl shadow-lg p-6">
 
-                      <div className="flex items-center justify-between mb-4">
-  
-                        {/* TITLE */}
-                        <h3 className="text-lg font-bold text-yellow-600">
-                          Perebutan Juara 3
-                        </h3>
-
-                        {/* SCORE */}
-                        {formatSetScore(thirdPlaceMatch) && (
-                          <div className="font-bold text-gray-800">
-                            {formatSetScore(thirdPlaceMatch)}
+                          {/* VS */}
+                          <div className="font-bold text-lg" style={{ color: '#9ca3af' }}>
+                            VS
                           </div>
-                        )}
 
+                          {/* PLAYER 2 */}
+                          <div 
+                            className="min-w-[180px] text-center rounded-lg px-3 py-2 text-lg font-medium border-2"
+                            style={
+                              (bagan.kategori === "double"
+                                ? thirdPlaceMatch.winnerDoubleId === thirdPlaceMatch.doubleTeam2Id
+                                : thirdPlaceMatch.winnerId === thirdPlaceMatch.peserta2Id)
+                                ? { backgroundColor: '#fef3c7', color: '#78350f', borderColor: '#fcd34d' }
+                                : { backgroundColor: '#f3f4f6', color: '#1f2937', borderColor: '#e5e7eb' }
+                            }
+                          >
+                            {bagan.kategori === "double"
+                              ? thirdPlaceMatch.doubleTeam2?.namaTim || "-"
+                              : thirdPlaceMatch.peserta2?.namaLengkap || "-"}
+                          </div>
+                        </div>
                       </div>
-                      {/* 🔥 HORIZONTAL */}
-                      <div className="flex items-center gap-4">
-
-                        {/* PLAYER 1 */}
-                        <div className={`min-w-[180px] text-center rounded-lg px-3 py-2 text-lg font-medium border-2
-                          ${(bagan.kategori === "double"
-                            ? thirdPlaceMatch.winnerDoubleId === thirdPlaceMatch.doubleTeam1Id
-                            : thirdPlaceMatch.winnerId === thirdPlaceMatch.peserta1Id)
-                            ? "bg-[#fef3c7] text-[#78350f] border-[#fcd34d]"
-                            : "bg-[#f3f4f6] text-[#1f2937] border-[#e5e7eb]"
-                          }`}
-                        >
-                          {bagan.kategori === "double"
-                            ? thirdPlaceMatch.doubleTeam1?.namaTim || "-"
-                            : thirdPlaceMatch.peserta1?.namaLengkap || "-"}
-                        </div>
-
-                        {/* VS */}
-                        <div className="font-bold text-gray-400 text-lg">
-                          VS
-                        </div>
-
-                        {/* PLAYER 2 */}
-                        <div className={`min-w-[180px] text-center rounded-lg px-3 py-2 text-lg font-medium border-2
-                          ${(bagan.kategori === "double"
-                            ? thirdPlaceMatch.winnerDoubleId === thirdPlaceMatch.doubleTeam2Id
-                            : thirdPlaceMatch.winnerId === thirdPlaceMatch.peserta2Id)
-                            ? "bg-[#fef3c7] text-[#78350f] border-[#fcd34d]"
-                            : "bg-[#f3f4f6] text-[#1f2937] border-[#e5e7eb]"
-                          }`}
-                        >
-                          {bagan.kategori === "double"
-                            ? thirdPlaceMatch.doubleTeam2?.namaTim || "-"
-                            : thirdPlaceMatch.peserta2?.namaLengkap || "-"}
-                        </div>
-
-                      </div>
-
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             </div>
+            )}
           </div>
-          )}
         </div>
 
         {/* ===== KETERANGAN KHUSUS PDF (TANPA TAILWIND) ===== */}
