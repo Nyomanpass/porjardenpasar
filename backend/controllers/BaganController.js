@@ -90,7 +90,8 @@ export const createBagan = async (req, res) => {
       }
 
       // Hubungkan Next Match
-      for (let m of allMatches) {
+   
+    for (let m of allMatches) {
         if (m.round < totalRounds) {
           const nextSlot = Math.ceil(m.slot / 2);
           const next = allMatches.find(nm => nm.round === m.round + 1 && nm.slot === nextSlot);
@@ -100,6 +101,19 @@ export const createBagan = async (req, res) => {
           }
         }
       }
+
+      // ===============================
+      // 🔥 TAMBAHAN DI SINI
+      // ===============================
+      if (totalRounds >= 2) {
+          await Match.create({
+            baganId: bagan.id,
+            round: totalRounds,
+            slot: 99, // 🔥 WAJIB
+            tournamentId,
+            status: "belum"
+          });
+        }
     }
 
     res.status(201).json({ msg: "Bagan berhasil dibuat", bagan });

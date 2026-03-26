@@ -503,12 +503,17 @@ const revealSlots = (matches, newBagan) => {
   });
   // --- SAMPAI DI SINI ---
 
-  const rounds = Object.keys(roundsMap)
-    .sort((a, b) => a - b)
-    .map((round) => ({
-      title: `Babak ${round}`,
-      seeds: roundsMap[round],
-    }));
+  // 🔥 ambil match juara 3
+const thirdPlaceMatch = bagan.Matches.find(m => m.slot === 99);
+
+// 🔥 filter slot 99 dari bracket utama
+const rounds = Object.keys(roundsMap)
+  .sort((a, b) => a - b)
+  .map((round) => ({
+    title: `Babak ${round}`,
+    seeds: roundsMap[round].filter(m => m.raw.slot !== 99),
+  }));
+
 // --- GANTI BAGIAN JUARA INI ---
   const finalRound = Math.max(...bagan.Matches.map((m) => m.round));
   const finalMatch = bagan.Matches.find((m) => m.round === finalRound);
@@ -833,6 +838,68 @@ if (isRoundRobin) {
                     );
                   }}
                 />
+                {/* 🔥 TARUH DI SINI */}
+                {thirdPlaceMatch && (
+                  <div className="mt-12 flex justify-center">
+                    
+                    <div className="bg-white border border-yellow-300 rounded-2xl shadow-lg p-6">
+
+                      <div className="flex items-center justify-between mb-4">
+  
+                        {/* TITLE */}
+                        <h3 className="text-lg font-bold text-yellow-600">
+                          Perebutan Juara 3
+                        </h3>
+
+                        {/* SCORE */}
+                        {formatSetScore(thirdPlaceMatch) && (
+                          <div className="font-bold text-gray-800">
+                            {formatSetScore(thirdPlaceMatch)}
+                          </div>
+                        )}
+
+                      </div>
+                      {/* 🔥 HORIZONTAL */}
+                      <div className="flex items-center gap-4">
+
+                        {/* PLAYER 1 */}
+                        <div className={`min-w-[180px] text-center rounded-lg px-3 py-2 text-lg font-medium border-2
+                          ${(bagan.kategori === "double"
+                            ? thirdPlaceMatch.winnerDoubleId === thirdPlaceMatch.doubleTeam1Id
+                            : thirdPlaceMatch.winnerId === thirdPlaceMatch.peserta1Id)
+                            ? "bg-[#fef3c7] text-[#78350f] border-[#fcd34d]"
+                            : "bg-[#f3f4f6] text-[#1f2937] border-[#e5e7eb]"
+                          }`}
+                        >
+                          {bagan.kategori === "double"
+                            ? thirdPlaceMatch.doubleTeam1?.namaTim || "-"
+                            : thirdPlaceMatch.peserta1?.namaLengkap || "-"}
+                        </div>
+
+                        {/* VS */}
+                        <div className="font-bold text-gray-400 text-lg">
+                          VS
+                        </div>
+
+                        {/* PLAYER 2 */}
+                        <div className={`min-w-[180px] text-center rounded-lg px-3 py-2 text-lg font-medium border-2
+                          ${(bagan.kategori === "double"
+                            ? thirdPlaceMatch.winnerDoubleId === thirdPlaceMatch.doubleTeam2Id
+                            : thirdPlaceMatch.winnerId === thirdPlaceMatch.peserta2Id)
+                            ? "bg-[#fef3c7] text-[#78350f] border-[#fcd34d]"
+                            : "bg-[#f3f4f6] text-[#1f2937] border-[#e5e7eb]"
+                          }`}
+                        >
+                          {bagan.kategori === "double"
+                            ? thirdPlaceMatch.doubleTeam2?.namaTim || "-"
+                            : thirdPlaceMatch.peserta2?.namaLengkap || "-"}
+                        </div>
+
+                      </div>
+
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

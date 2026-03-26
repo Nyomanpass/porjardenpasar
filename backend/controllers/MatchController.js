@@ -126,6 +126,7 @@ export const updateWinner = async (req, res) => {
           }
         }
         await next.save();
+        
 
         // 4. CEK BYE DI BABAK BERIKUTNYA
         // Jika setelah promosi babak berikutnya ternyata lawannya KOSONG (BYE), 
@@ -135,6 +136,57 @@ export const updateWinner = async (req, res) => {
         
         // Jika salah satu sisi terisi dan yang lain memang tidak akan pernah diisi (BYE)
         // Anda bisa memanggil _processMatchPeserta di sini jika diperlukan
+      }
+    }
+    // ===============================
+    // 🔥 JUARA 3 (HARUS DI LUAR)
+    // ===============================
+    const allMatches = await Match.findAll({
+      where: { baganId: match.baganId }
+    });
+
+    const maxRound = Math.max(...allMatches.map(m => m.round));
+    const semifinalRound = maxRound - 1;
+
+    // cek apakah ini semifinal
+    if (match.round === semifinalRound) {
+
+      let loserId;
+
+      if (isDouble) {
+        loserId = match.winnerDoubleId === match.doubleTeam1Id
+          ? match.doubleTeam2Id
+          : match.doubleTeam1Id;
+      } else {
+        loserId = match.winnerId === match.peserta1Id
+          ? match.peserta2Id
+          : match.peserta1Id;
+      }
+
+      const matchJuara3 = await Match.findOne({
+        where: {
+          baganId: match.baganId,
+          round: maxRound,
+          slot: 99
+        }
+      });
+
+      if (matchJuara3) {
+        if (isDouble) {
+          if (!matchJuara3.doubleTeam1Id) {
+            matchJuara3.doubleTeam1Id = loserId;
+          } else {
+            matchJuara3.doubleTeam2Id = loserId;
+          }
+        } else {
+          if (!matchJuara3.peserta1Id) {
+            matchJuara3.peserta1Id = loserId;
+          } else {
+            matchJuara3.peserta2Id = loserId;
+          }
+        }
+
+        await matchJuara3.save();
       }
     }
 
@@ -273,6 +325,16 @@ export const generateUndian = async (req, res) => {
           await _processMatchPeserta(m.id, side1, side2, kategori);
         }
       }
+    }
+
+    if (bagan.tipe === "knockout" && totalRounds >= 2) {
+      await Match.create({
+        baganId: id,
+        round: totalRounds,
+        slot: 99, // 🔥 konsisten
+        tournamentId,
+        status: "belum"
+      });
     }
 
     res.json({ msg: "Sukses Generate" });
@@ -569,22 +631,40 @@ export const getJuara = async (req, res) => {
         : (isDouble ? finalMatch.doubleTeam1 : finalMatch.peserta1);
 
       // Ambil Juara 3 (Semi Finalis yang kalah)
-      const semiMatches = await Match.findAll({
-        where: { baganId, round: finalMatch.round - 1, status: "selesai" },
+      // ===============================
+      // 🔥 AMBIL MATCH JUARA 3
+      // ===============================
+      const matchJuara3 = await Match.findOne({
+        where: {
+          baganId,
+          round: finalMatch.round,
+          slot: 99,
+          status: "selesai"
+        },
         include: [
-          { model: Peserta, as: "peserta1" }, { model: Peserta, as: "peserta2" },
-          { model: DoubleTeam, as: "doubleTeam1", include: ["Player1", "Player2"] },
-          { model: DoubleTeam, as: "doubleTeam2", include: ["Player1", "Player2"] }
+          { model: Peserta, as: "peserta1" },
+          { model: Peserta, as: "peserta2" },
+          { 
+            model: DoubleTeam, as: "doubleTeam1",
+            include: [{ model: Peserta, as: "Player1" }, { model: Peserta, as: "Player2" }]
+          },
+          { 
+            model: DoubleTeam, as: "doubleTeam2",
+            include: [{ model: Peserta, as: "Player1" }, { model: Peserta, as: "Player2" }]
+          },
         ]
       });
 
-      const juara3 = semiMatches.map(m => {
-        const wId = isDouble ? m.winnerDoubleId : m.winnerId;
-        const side1Id = isDouble ? m.doubleTeam1Id : m.peserta1Id;
-        return wId === side1Id 
-          ? (isDouble ? m.doubleTeam2 : m.peserta2) 
-          : (isDouble ? m.doubleTeam1 : m.peserta1);
-      });
+      let juara3 = null;
+
+      if (matchJuara3) {
+        const winnerId = isDouble ? matchJuara3.winnerDoubleId : matchJuara3.winnerId;
+        const p1Id = isDouble ? matchJuara3.doubleTeam1Id : matchJuara3.peserta1Id;
+
+        juara3 = winnerId === p1Id
+          ? (isDouble ? matchJuara3.doubleTeam1 : matchJuara3.peserta1)
+          : (isDouble ? matchJuara3.doubleTeam2 : matchJuara3.peserta2);
+      }
 
       return res.json({ juara1, juara2, juara3 });
     }
@@ -811,6 +891,64 @@ export const updateMatchPoint = async (req, res) => {
                 }
                 await nextMatch.save();
             }
+        }
+
+        // ===============================
+        // 🔥 TAMBAHAN JUARA 3 (WAJIB)
+        // ===============================
+        if (statusMatch === 'selesai') {
+
+          const allMatches = await Match.findAll({
+            where: { baganId: match.baganId }
+          });
+
+          const maxRound = Math.max(...allMatches.map(m => m.round));
+          const semifinalRound = maxRound - 1;
+
+          // cek apakah ini semifinal
+          if (match.round === semifinalRound) {
+
+            const isDouble = !!match.doubleTeam1Id;
+
+            let loserId;
+
+            if (isDouble) {
+              loserId = match.winnerDoubleId === match.doubleTeam1Id
+                ? match.doubleTeam2Id
+                : match.doubleTeam1Id;
+            } else {
+              loserId = match.winnerId === match.peserta1Id
+                ? match.peserta2Id
+                : match.peserta1Id;
+            }
+
+            // cari match juara 3 (slot 2)
+            const matchJuara3 = await Match.findOne({
+              where: {
+                baganId: match.baganId,
+                round: maxRound,
+                slot: 99
+              }
+            });
+
+            if (matchJuara3) {
+              if (isDouble) {
+                if (!matchJuara3.doubleTeam1Id) {
+                  matchJuara3.doubleTeam1Id = loserId;
+                } else {
+                  matchJuara3.doubleTeam2Id = loserId;
+                }
+              } else {
+                if (!matchJuara3.peserta1Id) {
+                  matchJuara3.peserta1Id = loserId;
+                } else {
+                  matchJuara3.peserta2Id = loserId;
+                }
+              }
+
+              await matchJuara3.save();
+            }
+          }
         }
 
         res.status(200).json({ msg: "Skor Berhasil Diperbarui" });
